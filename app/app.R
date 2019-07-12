@@ -10,6 +10,10 @@ library(Cairo)
 options(shiny.usecairo=T)
 library(magrittr)
 library(lubridate)
+# devtools::install_github("jcheng5/bubbles")
+library(bubbles)
+# install.packages("packcircles")
+library(packcircles)
 library(rCharts)
 
 df <- readRDS(file = "./data/jun_19.rds") 
@@ -78,7 +82,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                       ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")))
                                                         )
                                                  ,column(width = 4,box("Digital transactions to date"
-                                                                       ,width = NULL, plotlyOutput(outputId = "trans_plot_sum", height = "300px")))
+                                                                       ,width = NULL, plotOutput(outputId = "trans_plot_sum", height = "300px")))
                                                  ,column(width = 4
                                                          ,fluidRow(box("Unique users to date"
                                                                        ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")))
@@ -261,9 +265,10 @@ server <- function(input, output, session) {
       mutate(user_type = var_to_label(user_type),
              user_lab = case_when(grepl("classic",user_type) ~ "Classic Catalog",
                                   grepl("shared",user_type) ~ "Shared Catalog"))
-    p <- ggplot(view_sum, aes(reorder(user_type,tot),tot,fill=user_type, 
+    p <- ggplot(view_sum, aes(s_year,tot,fill=user_type, 
                               text = paste(user_lab,':<br>',comma_format()(tot),'page views'))) +
-      geom_bar(stat = 'identity') +
+      geom_col() +
+      coord_flip() +
       scale_fill_manual(values = cat_color(view_sum$user_type)) +
       labs(x = "", y = "") +
       theme_tufte(base_family='sans') +
@@ -275,7 +280,7 @@ server <- function(input, output, session) {
       config(displayModeBar = F)
   })
   
-  output$trans_plot_sum <- renderPlotly({
+  output$trans_plot_sum <- renderPlot({
     trans <- df %>% 
       select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash) %>%
       gather(transaction_type, count, sierra_checkouts:cloudlibrary_audiobook_holds) %>%
@@ -285,18 +290,20 @@ server <- function(input, output, session) {
                                  grepl("cloud",transaction_type) ~ "CloudLibrary")) %>%
       group_by(grouper) %>%
       summarise(tot = sum(count))
-    p <- ggplot(trans, aes(reorder(grouper,tot),tot,fill=grouper, 
-                              text = paste(grouper,':<br>',comma_format()(tot),'transactions'))) +
-      geom_bar(stat = 'identity') +
-      scale_fill_manual(values = cat_color(trans$grouper)) +
-      labs(x = "", y = "") +
-      theme_tufte(base_family='sans') +
-      theme(axis.text.x = element_blank()
-            ,axis.text.y = element_blank()
-            ,legend.position = "none"
-      )
-    ggplotly(p, tooltip = c("text")) %>% 
-      config(displayModeBar = F)    
+    
+    packing <- circleProgressiveLayout(trans$tot, sizetype='area')
+    cap_bub <- bind_cols(trans, packing)
+    dat.gg <- circleLayoutVertices(packing, npoints = 100)
+    p <- ggplot(data = dat.gg) +
+      # Make the bubbles
+      geom_polygon(aes(x, y, group = id, fill=as.factor(id)), alpha = 1, show.legend = FALSE) +
+      scale_fill_manual(values = cat_color(cap_bub$grouper)) +
+      geom_text(data = cap_bub, aes(x, y, size = tot, label = paste(grouper,comma(tot),sep='\n'))) +
+      theme_void() +
+      theme(legend.position="none") +
+      coord_equal()
+    
+    return(p)   
 
   })
   
@@ -340,9 +347,10 @@ server <- function(input, output, session) {
       mutate(user_type = var_to_label(user_type),
              user_lab = case_when(grepl("classic",user_type) ~ "Classic Catalog",
                                   grepl("shared",user_type) ~ "Shared Catalog"))
-    p <- ggplot(user_sum, aes(reorder(user_type,tot),tot,fill=user_type,
+    p <- ggplot(user_sum, aes(s_year,tot,fill=user_type,
                               text = paste(user_lab,':<br>',comma_format()(tot),'users'))) +
-      geom_bar(stat = 'identity') +
+      geom_col() +
+      coord_flip() +
       scale_fill_manual(values = cat_color(user_sum$user_type)) +
       labs(x = "", y = "") +
       theme_tufte(base_family='sans') +
