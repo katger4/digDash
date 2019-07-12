@@ -1,24 +1,38 @@
 library(shiny)
 library(tidyverse)
 library(scales)
+library(plotly)
 library(ggthemes)
+library("wesanderson")
 library(shinydashboard)
 library(dashboardthemes)
 library(Cairo)
 options(shiny.usecairo=T)
 library(magrittr)
 library(lubridate)
-require(rCharts)
+library(rCharts)
 
-df <- readRDS(file = "./data/jun_19.rds")
+df <- readRDS(file = "./data/jun_19.rds") 
+
+cat_color <- function(var_name) {
+  var_name <- tolower(var_name)
+  col<- case_when(grepl("website",var_name) ~ "#35978f",
+            grepl("encore",var_name) ~ "#74add1",
+            grepl("overdrive",var_name) ~ "#9970ab",
+            grepl("cloud",var_name) ~ "#5aae61",
+            grepl("shared",var_name) ~ "#c2a5cf",
+            grepl("classic",var_name) ~ "#a6dba0",
+            grepl("sierra",var_name) ~ "#80cdc1",
+            grepl("card",var_name) ~ "#35978f",
+            grepl("kanopy",var_name) ~ "#01665e")
+  return(col)
+}
 
 var_to_label <- function(var_name) {
   var_name %<>%
     gsub('_', ' ', .) %>%
-    gsub('sierra', 'Sierra', .) %>%
-    gsub('overdrive', 'Overdrive', .) %>%
-    gsub('cloudlibrary', 'CloudLibrary', .)
-  return(var_name)
+    gsub("(^[[:alpha:]])", "\\U\\1", ., perl=TRUE) %>%
+    gsub('Cloudlibrary', 'CloudLibrary', .)
 }
 
 var_choices <- c("Sierra transactions"="sierra_trans",
@@ -43,8 +57,9 @@ ui <- dashboardPage(title="Digital dashboard",
                                                               )),
                     dashboardBody(# hide errors
                       tags$style(type="text/css",
-                                 ".shiny-output-error { visibility: hidden; }",
-                                 ".shiny-output-error:before { visibility: hidden; }",
+                                 # ".shiny-output-error { visibility: hidden; }",
+                                 # ".shiny-output-error:before { visibility: hidden; }",
+                                 # "sm_row { height : 100px; }",
                                  "-webkit-font-smoothing: antialiased;",
                                  "-webkit-filter: blur(0.000001px);"
                       ),
@@ -56,9 +71,21 @@ ui <- dashboardPage(title="Digital dashboard",
                                                      ,status = "primary"
                                                     ))
                                        ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
-                                       ,fluidRow(column(width = 4, box(width = NULL, chartOutput(outputId = "user_plot_sum", "nvd3"),plotOutput("plot_for_size1")))
-                                                 ,column(width = 4,box(width = NULL, chartOutput(outputId = "views_plot_sum", "nvd3"),plotOutput("plot_for_size2")))
-                                                 ,column(width = 4,box(width = NULL, chartOutput(outputId = "trans_plot_sum", "nvd3"),plotOutput("plot_for_size3"))))
+                                       ,fluidRow(column(width = 4
+                                                        ,fluidRow(box("Page views to date"
+                                                                      ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")))
+                                                        ,fluidRow(box("Catalog page views to date"
+                                                                      ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")))
+                                                        )
+                                                 ,column(width = 4,box("Digital transactions to date"
+                                                                       ,width = NULL, plotlyOutput(outputId = "trans_plot_sum", height = "300px")))
+                                                 ,column(width = 4
+                                                         ,fluidRow(box("Unique users to date"
+                                                                       ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")))
+                                                         ,fluidRow(box("Unique catalog users to date"
+                                                                       ,width = NULL, plotlyOutput(outputId = "src_user_plot_sum", height = "150px")))
+                                                         )
+                                       )
                                        ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
                                        ),
                                tabItem(tabName = "transactions"
@@ -198,6 +225,135 @@ server <- function(input, output, session) {
   })
   
   ### PLOTS ###
+  output$views_plot_sum <- renderPlotly({
+    view_sum <- df %>% 
+      select(contains("views"), -contains("catalog"), date_dash) %>%
+      gather(user_type, count, website_visits_page_views:search_requestsencore__page_views) %>%
+      mutate(s_year = year(date_dash)) %>%
+      group_by(user_type, s_year) %>%
+      summarise(tot = sum(count)) %>%
+      ungroup() %>%
+      mutate(user_type = var_to_label(user_type),
+             user_lab = case_when(grepl("Website",user_type) ~ "Website",
+                                  grepl("encore",user_type) ~ "Encore"))
+    p <- ggplot(view_sum, aes(reorder(user_type,tot),tot,fill=user_type, 
+                              text = paste(user_lab,':<br>',comma_format()(tot),'page views'))) +
+      geom_bar(stat = 'identity') +
+      scale_fill_manual(values = cat_color(view_sum$user_type)) +
+      labs(x = "", y = "") +
+      theme_tufte(base_family='sans') +
+      theme(axis.text.x = element_blank()
+            ,axis.text.y = element_blank()
+            ,legend.position = "none"
+      )
+    ggplotly(p, tooltip = c("text")) %>% 
+      config(displayModeBar = F)
+  })
+  
+  output$cat_views_plot_sum <- renderPlotly({
+    view_sum <- df %>% 
+      select(intersect(contains("views"), contains("catalog")), date_dash) %>%
+      gather(user_type, count, search_requests_classic_catalog_page_views:search_requests_shared_catalog_page_views) %>%
+      mutate(s_year = year(date_dash)) %>%
+      group_by(user_type, s_year) %>%
+      summarise(tot = sum(count)) %>%
+      ungroup() %>%
+      mutate(user_type = var_to_label(user_type),
+             user_lab = case_when(grepl("classic",user_type) ~ "Classic Catalog",
+                                  grepl("shared",user_type) ~ "Shared Catalog"))
+    p <- ggplot(view_sum, aes(reorder(user_type,tot),tot,fill=user_type, 
+                              text = paste(user_lab,':<br>',comma_format()(tot),'page views'))) +
+      geom_bar(stat = 'identity') +
+      scale_fill_manual(values = cat_color(view_sum$user_type)) +
+      labs(x = "", y = "") +
+      theme_tufte(base_family='sans') +
+      theme(axis.text.x = element_blank()
+            ,axis.text.y = element_blank()
+            ,legend.position = "none"
+      )
+    ggplotly(p, tooltip = c("text")) %>% 
+      config(displayModeBar = F)
+  })
+  
+  output$trans_plot_sum <- renderPlotly({
+    trans <- df %>% 
+      select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash) %>%
+      gather(transaction_type, count, sierra_checkouts:cloudlibrary_audiobook_holds) %>%
+      mutate(s_year = year(date_dash)) %>%
+      mutate(grouper = case_when(grepl("sierra",transaction_type) ~ "Sierra",
+                                 grepl("overdrive",transaction_type) ~ "Overdrive",
+                                 grepl("cloud",transaction_type) ~ "CloudLibrary")) %>%
+      group_by(grouper) %>%
+      summarise(tot = sum(count))
+    p <- ggplot(trans, aes(reorder(grouper,tot),tot,fill=grouper, 
+                              text = paste(grouper,':<br>',comma_format()(tot),'transactions'))) +
+      geom_bar(stat = 'identity') +
+      scale_fill_manual(values = cat_color(trans$grouper)) +
+      labs(x = "", y = "") +
+      theme_tufte(base_family='sans') +
+      theme(axis.text.x = element_blank()
+            ,axis.text.y = element_blank()
+            ,legend.position = "none"
+      )
+    ggplotly(p, tooltip = c("text")) %>% 
+      config(displayModeBar = F)    
+
+  })
+  
+  output$user_plot_sum <- renderPlotly({
+    user_sum <- df %>% 
+      select(ends_with("users")
+             , -contains("catalog")
+             , date_dash) %>%
+      gather(user_type, count, website_visits_users:cloudlibrary_unique_users) %>%
+      mutate(s_year = year(date_dash)) %>%
+      group_by(user_type, s_year) %>%
+      summarise(tot = sum(count)) %>%
+      ungroup() %>%
+      mutate(user_type = var_to_label(user_type),
+             user_lab = case_when(grepl("Website",user_type) ~ "Website",
+                                  grepl("Overdrive",user_type) ~ "Overdrive",
+                                  grepl("Cloud",user_type) ~ "CloudLibrary",
+                                  grepl("encore",user_type) ~ "Encore"))
+    p <- ggplot(user_sum, aes(reorder(user_type,tot),tot,fill=user_type, 
+                              text = paste(user_lab,':<br>',comma_format()(tot),'users'))) +
+      geom_bar(stat = 'identity') +
+      scale_fill_manual(values = cat_color(user_sum$user_type)) +
+      labs(x = "", y = "") +
+      theme_tufte(base_family='sans') +
+      theme(axis.text.x = element_blank()
+            ,axis.text.y = element_blank()
+            ,legend.position = "none"
+            )
+    ggplotly(p, tooltip = c("text")) %>% 
+      config(displayModeBar = F)
+  })
+  
+  output$src_user_plot_sum <- renderPlotly({
+    user_sum <- df %>%
+      select(intersect(ends_with("users"), contains("catalog")), date_dash) %>%
+      gather(user_type, count, search_requests_classic_catalog_users:search_requests_shared_catalog_users) %>%
+      mutate(s_year = year(date_dash)) %>%
+      group_by(user_type, s_year) %>%
+      summarise(tot = sum(count)) %>%
+      ungroup() %>%
+      mutate(user_type = var_to_label(user_type),
+             user_lab = case_when(grepl("classic",user_type) ~ "Classic Catalog",
+                                  grepl("shared",user_type) ~ "Shared Catalog"))
+    p <- ggplot(user_sum, aes(reorder(user_type,tot),tot,fill=user_type,
+                              text = paste(user_lab,':<br>',comma_format()(tot),'users'))) +
+      geom_bar(stat = 'identity') +
+      scale_fill_manual(values = cat_color(user_sum$user_type)) +
+      labs(x = "", y = "") +
+      theme_tufte(base_family='sans') +
+      theme(axis.text.x = element_blank()
+            ,axis.text.y = element_blank()
+            ,legend.position = "none"
+      )
+    ggplotly(p, tooltip = c("text")) %>%
+      config(displayModeBar = F)
+  })
+  
   output$trans_plot <- renderChart({
     if (input$time_var == "monthly"){
       monthly <- var() %>%
