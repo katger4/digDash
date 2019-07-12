@@ -3,7 +3,6 @@ library(tidyverse)
 library(scales)
 library(plotly)
 library(ggthemes)
-library("wesanderson")
 library(shinydashboard)
 library(dashboardthemes)
 library(Cairo)
@@ -37,6 +36,10 @@ var_to_label <- function(var_name) {
     gsub('_', ' ', .) %>%
     gsub("(^[[:alpha:]])", "\\U\\1", ., perl=TRUE) %>%
     gsub('Cloudlibrary', 'CloudLibrary', .)
+}
+
+overview_tooltip <- function(var_name, value, var_type) {
+  paste('<b>',var_name,'</b>:<br>',comma_format()(value),var_type)
 }
 
 var_choices <- c("Sierra transactions"="sierra_trans",
@@ -73,21 +76,32 @@ ui <- dashboardPage(title="Digital dashboard",
                                                      ,title = span(HTML("<strong>Daily Digital Data Drop dashboard</strong>")) 
                                                      ,solidHeader = TRUE #,includeHTML("about.html")
                                                      ,status = "primary"
+                                                    ,"January - June 2019"
                                                     ))
                                        ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
                                        ,fluidRow(column(width = 4
-                                                        ,fluidRow(box("Page views to date"
+                                                        ,fluidRow(box("Page views"
                                                                       ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")))
-                                                        ,fluidRow(box("Catalog page views to date"
-                                                                      ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")))
+                                                        ,fluidRow(box("Catalog page views"
+                                                                      ,width = NULL, plotOutput(outputId = "cat_views_plot_sum", height = "150px")))
                                                         )
-                                                 ,column(width = 4,box("Digital transactions to date"
-                                                                       ,width = NULL, plotOutput(outputId = "trans_plot_sum", height = "300px")))
                                                  ,column(width = 4
-                                                         ,fluidRow(box("Unique users to date"
+                                                         ,box("Digital transactions"
+                                                              ,width = NULL
+                                                              # ,uiOutput("plotui", height="300px")
+                                                              ,plotlyOutput(outputId = "trans_plot_sum", height = "350px"
+                                                                          # , hover = "plot_hover", hoverDelay = 0
+                                                                          )
+                                                              
+                                                              )
+                                                         # ,box("box",verbatimTextOutput("plot_hover"))
+                                                         # ,box(uiOutput("my_tooltip"))
+                                                         )
+                                                 ,column(width = 4
+                                                         ,fluidRow(box("Unique users"
                                                                        ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")))
-                                                         ,fluidRow(box("Unique catalog users to date"
-                                                                       ,width = NULL, plotlyOutput(outputId = "src_user_plot_sum", height = "150px")))
+                                                         ,fluidRow(box("Unique catalog users"
+                                                                       ,width = NULL, plotOutput(outputId = "cat_user_plot_sum", height = "150px")))
                                                          )
                                        )
                                        ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
@@ -149,7 +163,7 @@ server <- function(input, output, session) {
   ### VALUE BOXES ###
   
   output$card_tot <- renderValueBox({
-    text <- HTML(paste("New card sign ups to date",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+    text <- HTML(paste("New card sign ups",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
       comma_format()(sum(df %>% select(new_card_sign_ups))), text, icon = icon("id-card"),
       color = "blue"
@@ -157,7 +171,7 @@ server <- function(input, output, session) {
   })
   
   output$kan_visits <- renderValueBox({
-      text <- HTML(paste("Kanopy visits to date",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      text <- HTML(paste("Kanopy visits",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
       comma_format()(sum(df %>% select(kanopy_visits))), text, icon = icon("eye"),
       color = "blue"
@@ -165,7 +179,7 @@ server <- function(input, output, session) {
   })
   
   output$kan_plays <- renderValueBox({
-      text <- HTML(paste("Kanopy plays to date",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      text <- HTML(paste("Kanopy plays",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
       comma_format()(sum(df %>% select(kanopy_plays))), text, icon = icon("youtube"),
       color = "blue"
@@ -239,22 +253,29 @@ server <- function(input, output, session) {
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
              user_lab = case_when(grepl("Website",user_type) ~ "Website",
-                                  grepl("encore",user_type) ~ "Encore"))
-    p <- ggplot(view_sum, aes(reorder(user_type,tot),tot,fill=user_type, 
-                              text = paste(user_lab,':<br>',comma_format()(tot),'page views'))) +
-      geom_bar(stat = 'identity') +
-      scale_fill_manual(values = cat_color(view_sum$user_type)) +
-      labs(x = "", y = "") +
-      theme_tufte(base_family='sans') +
-      theme(axis.text.x = element_blank()
-            ,axis.text.y = element_blank()
-            ,legend.position = "none"
-      )
-    ggplotly(p, tooltip = c("text")) %>% 
+                                  grepl("encore",user_type) ~ "Encore"),
+             hex = cat_color(user_lab))
+
+    p <- plot_ly(view_sum, x= ~user_lab, y = ~tot
+                 ,type = "bar"
+                 ,marker = list(color=view_sum$hex)
+                 ,text = comma_format()(view_sum$tot)
+                 ,textposition="outside"
+                 ,cliponaxis = FALSE
+                 ,hoverinfo = 'text'
+                 ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
+                 ) %>%
+      layout(showlegend = F
+             ,bargap = 0
+             ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
+             ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+             ,margin = list(b=10,l=10,r=10,t=20,pad=4)
+             )
+    ggplotly(p) %>% 
       config(displayModeBar = F)
   })
   
-  output$cat_views_plot_sum <- renderPlotly({
+  output$cat_views_plot_sum <- renderPlot({
     view_sum <- df %>% 
       select(intersect(contains("views"), contains("catalog")), date_dash) %>%
       gather(user_type, count, search_requests_classic_catalog_page_views:search_requests_shared_catalog_page_views) %>%
@@ -263,11 +284,15 @@ server <- function(input, output, session) {
       summarise(tot = sum(count)) %>%
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
-             user_lab = case_when(grepl("classic",user_type) ~ "Classic Catalog",
-                                  grepl("shared",user_type) ~ "Shared Catalog"))
+             user_lab = case_when(grepl("classic",user_type) ~ "Classic",
+                                  grepl("shared",user_type) ~ "Shared"))
     p <- ggplot(view_sum, aes(s_year,tot,fill=user_type, 
-                              text = paste(user_lab,':<br>',comma_format()(tot),'page views'))) +
+                              text = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views'))) +
       geom_col() +
+      geom_text(aes(label = stringr::str_wrap(paste0(user_lab,": ",comma_format()(tot)),2))
+                ,position = position_stack(vjust =ifelse(view_sum$user_lab == "Shared",0.5,0.77))
+                # ,hjust = 'top'
+                ) +
       coord_flip() +
       scale_fill_manual(values = cat_color(view_sum$user_type)) +
       labs(x = "", y = "") +
@@ -276,11 +301,12 @@ server <- function(input, output, session) {
             ,axis.text.y = element_blank()
             ,legend.position = "none"
       )
-    ggplotly(p, tooltip = c("text")) %>% 
-      config(displayModeBar = F)
+    return(p)
+    # ggplotly(p, tooltip = c("text")) %>% 
+    #   config(displayModeBar = F)
   })
   
-  output$trans_plot_sum <- renderPlot({
+  output$trans_plot_sum <- renderPlotly({
     trans <- df %>% 
       select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash) %>%
       gather(transaction_type, count, sierra_checkouts:cloudlibrary_audiobook_holds) %>%
@@ -303,7 +329,20 @@ server <- function(input, output, session) {
       theme(legend.position="none") +
       coord_equal()
     
-    return(p)   
+    gp <- ggplotly(p, tooltip = c("text")) %>% 
+      config(displayModeBar = F) %>%
+      layout(xaxis = list(showgrid = F),
+             yaxis = list(showgrid = F))
+    
+    # needed to remove tooltip from circle (1,2,3)
+    for(i in 1:3){
+      gp$x$data[[i]]$hoverinfo = 'none'
+    }
+
+    # gp$x$data[[4]]$text[[2]] = ''
+    # gp$x$data[[4]]$text[[3]] = ''
+    
+    return(gp)  
 
   })
   
@@ -321,22 +360,22 @@ server <- function(input, output, session) {
              user_lab = case_when(grepl("Website",user_type) ~ "Website",
                                   grepl("Overdrive",user_type) ~ "Overdrive",
                                   grepl("Cloud",user_type) ~ "CloudLibrary",
-                                  grepl("encore",user_type) ~ "Encore"))
-    p <- ggplot(user_sum, aes(reorder(user_type,tot),tot,fill=user_type, 
-                              text = paste(user_lab,':<br>',comma_format()(tot),'users'))) +
-      geom_bar(stat = 'identity') +
-      scale_fill_manual(values = cat_color(user_sum$user_type)) +
-      labs(x = "", y = "") +
-      theme_tufte(base_family='sans') +
-      theme(axis.text.x = element_blank()
-            ,axis.text.y = element_blank()
-            ,legend.position = "none"
-            )
-    ggplotly(p, tooltip = c("text")) %>% 
+                                  grepl("encore",user_type) ~ "Encore"),
+             hex = cat_color(user_type))
+    p <- plot_ly(user_sum, labels = ~user_lab, values = ~tot
+                 ,marker = list(colors=user_sum$hex)
+                 ,textposition="outside"
+                 ,hoverinfo = 'text'
+                 ,hovertext = overview_tooltip(user_sum$user_lab,user_sum$tot,'users')) %>%
+      add_pie(hole = 0.6) %>%
+      layout(showlegend = F,
+             xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+             yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+    ggplotly(p) %>% 
       config(displayModeBar = F)
   })
   
-  output$src_user_plot_sum <- renderPlotly({
+  output$cat_user_plot_sum <- renderPlot({
     user_sum <- df %>%
       select(intersect(ends_with("users"), contains("catalog")), date_dash) %>%
       gather(user_type, count, search_requests_classic_catalog_users:search_requests_shared_catalog_users) %>%
@@ -345,21 +384,26 @@ server <- function(input, output, session) {
       summarise(tot = sum(count)) %>%
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
-             user_lab = case_when(grepl("classic",user_type) ~ "Classic Catalog",
-                                  grepl("shared",user_type) ~ "Shared Catalog"))
+             user_lab = case_when(grepl("classic",user_type) ~ "Classic",
+                                  grepl("shared",user_type) ~ "Shared"))
+    
+
     p <- ggplot(user_sum, aes(s_year,tot,fill=user_type,
-                              text = paste(user_lab,':<br>',comma_format()(tot),'users'))) +
+                              text = overview_tooltip(user_sum$user_lab,user_sum$tot,'users'))) +
       geom_col() +
+      geom_text(aes(label = stringr::str_wrap(paste0(user_lab,": ",comma_format()(tot)),2))
+                ,position = position_stack(vjust = .5)) +
       coord_flip() +
       scale_fill_manual(values = cat_color(user_sum$user_type)) +
       labs(x = "", y = "") +
       theme_tufte(base_family='sans') +
       theme(axis.text.x = element_blank()
             ,axis.text.y = element_blank()
-            ,legend.position = "none"
-      )
-    ggplotly(p, tooltip = c("text")) %>%
-      config(displayModeBar = F)
+            ,legend.position = "none")
+    return(p)
+    # ggplotly(p, tooltip = c("text")) %>%
+    #   # layout(annotations = list(x = user_sum$user_lab, y = user_sum$tot, text = user_sum$tot)) %>%
+    #   config(displayModeBar = F)
   })
   
   output$trans_plot <- renderChart({
@@ -392,6 +436,81 @@ server <- function(input, output, session) {
     }
 
   })
+  
+  # output$my_tooltip <- renderUI({
+  #   hover <- input$plot_hover 
+  #   yo <- nearPoints(cap_bub, input$plot_hover)
+  #   req(nrow(yo) != 0)
+  #   verbatimTextOutput("vals")
+  # })
+  # 
+  # output$vals <- renderPrint({
+  #   hover <- input$plot_hover 
+  #   yo <- nearPoints(cap_bub, input$plot_hover)
+  #   req(nrow(yo) != 0)
+  #   yo
+  # }) 
+  
+  # output$plotui <- renderUI({
+  #   plotOutput("trans_plot_sum",
+  #              height=300,
+  #              hover = hoverOpts(
+  #                id = "plot_hover",
+  #                delay = 100,
+  #                delayType = "throttle",
+  #                clip = TRUE,
+  #                nullOutside = TRUE
+  #              )
+  #   )
+  # })
+  # output$plot_hoverinfo <- renderPrint({
+  #   val <-nearPoints(cap_bub, input$plot_hover, threshold = 10, maxpoints = 1,addDist = TRUE)[1,1]
+  #   cat(val)
+  #   # cat("input$plot_hover:\n")
+  #   # str(input$plot_hover)
+  # })
+  # output$hover_info <- renderUI({
+  #   hover <- input$plot_hover
+  #   trans <- df %>% 
+  #     select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash) %>%
+  #     gather(transaction_type, count, sierra_checkouts:cloudlibrary_audiobook_holds) %>%
+  #     mutate(s_year = year(date_dash)) %>%
+  #     mutate(grouper = case_when(grepl("sierra",transaction_type) ~ "Sierra",
+  #                                grepl("overdrive",transaction_type) ~ "Overdrive",
+  #                                grepl("cloud",transaction_type) ~ "CloudLibrary")) %>%
+  #     group_by(grouper) %>%
+  #     summarise(tot = sum(count))
+  #   packing <- circleProgressiveLayout(trans$tot, sizetype='area')
+  #   cap_bub <- bind_cols(trans, packing)
+  #   dat.gg <- circleLayoutVertices(packing, npoints = 100)
+  #   point <- nearPoints(cap_bub, hover, threshold = 5, maxpoints = 1, addDist = TRUE)
+  #   if (nrow(point) == 0) return(NULL)
+  # 
+  #   # calculate point position INSIDE the image as percent of total dimensions
+  #   # from left (horizontal) and from top (vertical)
+  #   left_pct <- (hover$x - hover$domain$left) / (hover$domain$right - hover$domain$left)
+  #   top_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
+  # 
+  #   # calculate distance from left and bottom side of the picture in pixels
+  #   left_px <- hover$range$left + left_pct * (hover$range$right - hover$range$left)
+  #   top_px <- hover$range$top + top_pct * (hover$range$bottom - hover$range$top)
+  # 
+  #   # create style property fot tooltip
+  #   # background color is set so tooltip is a bit transparent
+  #   # z-index is set so we are sure are tooltip will be on top
+  #   style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+  #                   "left:", left_px + 2, "px; top:", top_px + 2, "px;")
+  # 
+  #   # actual tooltip created as wellPanel
+  #   wellPanel(
+  #     style = style,
+  #     p(HTML(paste0("<b> Car: </b>", rownames(point), "<br/>",
+  #                   # "<b> mpg: </b>", point$mpg, "<br/>",
+  #                   # "<b> hp: </b>", point$hp, "<br/>",
+  #                   "<b> Distance from left: </b>", left_px, "<b>, from top: </b>", top_px)))
+  #   )
+  # })
+
 }
 
 shinyApp(ui = ui, server = server)
