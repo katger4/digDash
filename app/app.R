@@ -60,7 +60,10 @@ ui <- dashboardPage(title="Digital dashboard",
                     dashboardHeader(title = logo_blue_gradient,titleWidth = 250),
                     dashboardSidebar(width = 250, sidebarMenu(id = "sidebar_menu",
                                                               menuItem("Overview", tabName = "overview", icon = icon("globe"))
-                                                              ,menuItem("Transactions", tabName = "transactions", icon = icon("arrows-alt-h"))
+                                                              ,menuItem("New Cards", tabName = "cards", icon = icon("id-card"))
+                                                              ,menuItem("Digital Transactions", tabName = "transactions", icon = icon("arrows-alt-h"))
+                                                              ,menuItem("Page Views", tabName = "views", icon = icon("eye"))
+                                                              ,menuItem("Users", tabName = "users", icon = icon("users"))
                                                               )),
                     dashboardBody(# hide errors
                       tags$style(type="text/css",
@@ -98,8 +101,8 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                        ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")))
                                                          )
                                        )
-                                       ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
-                                       ,fluidRow(box(width = 11,"*Transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
+                                       # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
+                                       ,fluidRow(box(width = 11,"*Digital transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                                        ),
                                tabItem(tabName = "transactions"
                                        ,fluidRow(column(width=4),column(width=4,valueBoxOutput("tot", width = NULL)),column(width=4))
@@ -336,7 +339,7 @@ server <- function(input, output, session) {
     }
     # specify hoverinfo manually
     gp$x$data[[4]]$hoverlabel = list(bgcolor = cat_color(cap_bub$grouper))
-    gp$x$data[[4]]$hovertext = overview_tooltip(cap_bub$grouper,cap_bub$tot,'users')
+    gp$x$data[[4]]$hovertext = overview_tooltip(cap_bub$grouper,cap_bub$tot,'digital transactions')
     
     return(gp)  
 
