@@ -12,26 +12,16 @@ library(packcircles)
 library(plotly)
 library(rCharts)
 
+var_choices <- c("Sierra transactions"="sierra_trans",
+                 "Overdrive transactions" = "overdrive_trans",
+                 "CloudLibrary transactions" = "cloud_trans")
+
+user_choices <- c("Non catalog users" = "nc_users",
+                 "Catalog users" = "c_users")
+
+time_choices <- c("Monthly","Daily","Quarterly")
+
 df <- readRDS(file = "./data/jun_19.rds")
-
-# daily <- prep_card(df)
-
-# n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart")
-# xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
-# tt <- "#! function(key, x, y){ return '<p><strong>New card sign ups</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
-# n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, tt)
-# # n$chart(showControls = FALSE)
-# # n$chart(showLegend = FALSE)
-# n
-
-# monthly <- prep_card(df) %>%
-#   group_by(s_month) %>%
-#   summarise(count = sum(new_card_sign_ups))
-# 
-# n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart")
-# tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
-# n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", tooltip = tt)
-# n
 
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
@@ -58,25 +48,30 @@ overview_tooltip <- function(var_name, value, var_type) {
   paste('<b>',var_name,'</b>:<br>',comma_format()(value),var_type)
 }
 
-var_choices <- c("Sierra transactions"="sierra_trans",
-                 "Overdrive transactions" = "overdrive_trans",
-                 "CloudLibrary transactions" = "cloud_trans")
+tool_label <- function(col_name) {
+  return(case_when(grepl("sierra",col_name) ~ "Sierra",
+                   grepl("overdrive",col_name) ~ "Overdrive",
+                   grepl("cloud",col_name) ~ "CloudLibrary",
+                   grepl("Website",col_name) ~ "Website",
+                   grepl("Overdrive",col_name) ~ "Overdrive",
+                   grepl("Cloud",col_name) ~ "CloudLibrary",
+                   grepl("encore",col_name) ~ "Encore",
+                   grepl("classic",col_name) ~ "Classic",
+                   grepl("shared",col_name) ~ "Shared")
+         )
+}
 
-time_choices <- c("Monthly","Daily","Quarterly")
+create_d3_date <- function(ymd_date) {
+  return(as.double(as.POSIXct(as.Date(ymd_date),origin="1970-01-01")) * 1000)
+}
 
-prep_trans <- function(df, trans_name) {
-  df %>% 
-    select(starts_with(trans_name), -ends_with("users"), date_dash) %>%
-    gather_(key = "transaction_type", value = "count", setdiff(names(.), 'date_dash')) %>%
-    mutate(s_month = month(date_dash, label = TRUE),
-           s_date = as.double(as.POSIXct(as.Date(date_dash),origin="1970-01-01")) * 1000,
-           s_quarter = case_when(between(month(date_dash),7,9) ~ paste('Q1',as.character(year(date_dash))),
-                                 between(month(date_dash),10,12) ~ paste('Q2',as.character(year(date_dash))),
-                                 between(month(date_dash),1,3) ~ paste('Q3',as.character(year(date_dash))),
-                                 between(month(date_dash),4,6) ~ paste('Q4',as.character(year(date_dash)))
-                                 )
-           ) %>%
-    arrange(s_date) 
+create_quarters <- function(ymd_date) {
+  return (case_when(between(month(ymd_date),7,9) ~ paste('Q1',as.character(year(ymd_date))),
+                    between(month(ymd_date),10,12) ~ paste('Q2',as.character(year(ymd_date))),
+                    between(month(ymd_date),1,3) ~ paste('Q3',as.character(year(ymd_date))),
+                    between(month(ymd_date),4,6) ~ paste('Q4',as.character(year(ymd_date)))
+                    )
+          )
 }
 
 prep_card <- function(df) {
@@ -84,15 +79,48 @@ prep_card <- function(df) {
     select(new_card_sign_ups, date_dash) %>%
     rename(count = new_card_sign_ups) %>%
     mutate(s_month = month(date_dash, label = TRUE),
-           s_date = as.double(as.POSIXct(as.Date(date_dash),origin="1970-01-01")) * 1000,
-           s_quarter = case_when(between(month(date_dash),7,9) ~ paste('Q1',as.character(year(date_dash))),
-                                 between(month(date_dash),10,12) ~ paste('Q2',as.character(year(date_dash))),
-                                 between(month(date_dash),1,3) ~ paste('Q3',as.character(year(date_dash))),
-                                 between(month(date_dash),4,6) ~ paste('Q4',as.character(year(date_dash)))
-           )
+           s_date = create_d3_date(date_dash),
+           s_quarter = create_quarters(date_dash)
     ) %>%
     arrange(s_date) 
 }
+
+prep_data <- function(df, key, cat, users, views, trans_name, trans_sum) {
+  if (!missing(cat)){  
+    if (cat == "not catalog" & !missing(users)) {
+      selected <- df %>% select(ends_with("users"), -contains("catalog"), date_dash)
+      } else if (cat == "catalog" & !missing(users)) {
+        selected <- df %>% select(intersect(ends_with("users"), contains("catalog")), date_dash) 
+      } else if (cat == "catalog" & !missing(views)) {
+        selected <- df %>% select(intersect(contains("views"), contains("catalog")), date_dash) 
+      } else if (cat == "not catalog" & !missing(views)) {
+        selected <- df %>% select(contains("views"), -contains("catalog"), date_dash)
+      } 
+  }
+  if (!missing(trans_name)) {
+    selected <- df %>% select(starts_with(trans_name), -ends_with("users"), date_dash)
+  }
+  if (!missing(trans_sum)) {
+    selected <- df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash)
+  }
+
+  selected %>%
+    gather_(key = key, value = "count", setdiff(names(.), 'date_dash')) %>%
+    mutate(s_month = month(date_dash, label = TRUE),
+           s_date = create_d3_date(date_dash),
+           s_quarter = create_quarters(date_dash),
+           s_year = year(date_dash)
+    ) %>%
+    arrange(s_date)
+}
+
+# group_by_time <- function(prepped_df, category_var, time_var) {
+#   # category_var <- as.name(category_var)
+#   # time_var <- as.name(time_var)
+#   prepped_df %>%
+#     group_by_at(vars(category_var,time_var)) %>%
+#     summarise(count = sum(count))
+# }
 
 format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, tooltip) {
   n_base$chart(margin = margin)

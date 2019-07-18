@@ -1,7 +1,11 @@
 server <- function(input, output, session) {
-  ### Trans VARIABLE ###
+  ### Vars ###
   var <- reactive({
-    switch(input$vars, "sierra_trans" = prep_trans(df, "sierra"), "overdrive_trans" = prep_trans(df, "overdrive"), "cloud_trans" = prep_trans(df, "cloudlibrary"))
+    switch(input$vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
+  })
+  
+  user_var <- reactive({
+    switch(input$vars, "big_user" = prep_user(df, "sierra"), "cat_user" = prep_user(df, "overdrive"))
   })
   
   ### VALUE BOXES ###
@@ -88,16 +92,12 @@ server <- function(input, output, session) {
   
   ### PLOTS ###
   output$views_plot_sum <- renderPlotly({
-    view_sum <- df %>% 
-      select(contains("views"), -contains("catalog"), date_dash) %>%
-      gather(user_type, count, website_visits_page_views:search_requestsencore__page_views) %>%
-      mutate(s_year = year(date_dash)) %>%
+    view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
       group_by(user_type, s_year) %>%
       summarise(tot = sum(count)) %>%
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
-             user_lab = case_when(grepl("Website",user_type) ~ "Website",
-                                  grepl("encore",user_type) ~ "Encore"),
+             user_lab = tool_label(user_type),
              hex = cat_color(user_lab))
 
     p <- plot_ly(view_sum, x= ~user_lab, y = ~tot
@@ -120,16 +120,12 @@ server <- function(input, output, session) {
   })
   
   output$cat_views_plot_sum <- renderPlotly({
-    view_sum <- df %>% 
-      select(intersect(contains("views"), contains("catalog")), date_dash) %>%
-      gather(user_type, count, search_requests_classic_catalog_page_views:search_requests_shared_catalog_page_views) %>%
-      mutate(s_year = year(date_dash)) %>%
+    view_sum <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
       group_by(user_type, s_year) %>%
       summarise(tot = sum(count)) %>%
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
-             user_lab = case_when(grepl("classic",user_type) ~ "Classic",
-                                  grepl("shared",user_type) ~ "Shared"),
+             user_lab = tool_label(user_type),
              hex = cat_color(user_lab))
     p <- plot_ly(view_sum, x= ~tot, y = ~user_lab
                  ,type = "bar"
@@ -152,13 +148,8 @@ server <- function(input, output, session) {
   })
   
   output$trans_plot_sum <- renderPlotly({
-    trans <- df %>% 
-      select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash) %>%
-      gather(transaction_type, count, sierra_checkouts:cloudlibrary_audiobook_holds) %>%
-      mutate(s_year = year(date_dash)) %>%
-      mutate(grouper = case_when(grepl("sierra",transaction_type) ~ "Sierra",
-                                 grepl("overdrive",transaction_type) ~ "Overdrive",
-                                 grepl("cloud",transaction_type) ~ "CloudLibrary")) %>%
+    trans <- prep_data(df, key = "transaction_type", trans_sum = TRUE) %>% 
+      mutate(grouper = tool_label(transaction_type)) %>%
       group_by(grouper) %>%
       summarise(tot = sum(count))
     
@@ -192,18 +183,12 @@ server <- function(input, output, session) {
   })
   
   output$user_plot_sum <- renderPlotly({
-    user_sum <- df %>% 
-      select(ends_with("users"), -contains("catalog"), date_dash) %>%
-      gather(user_type, count, website_visits_users:cloudlibrary_unique_users) %>%
-      mutate(s_year = year(date_dash)) %>%
+    user_sum <- prep_data(df, "user_type", cat = "not catalog", users = TRUE) %>%
       group_by(user_type, s_year) %>%
       summarise(tot = sum(count)) %>%
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
-             user_lab = case_when(grepl("Website",user_type) ~ "Website",
-                                  grepl("Overdrive",user_type) ~ "Overdrive",
-                                  grepl("Cloud",user_type) ~ "CloudLibrary",
-                                  grepl("encore",user_type) ~ "Encore"),
+             user_lab = tool_label(user_type),
              hex = cat_color(user_type))
     p <- plot_ly(user_sum, labels = ~user_lab, values = ~tot
                  ,marker = list(colors=user_sum$hex)
@@ -220,16 +205,12 @@ server <- function(input, output, session) {
   })
   
   output$cat_user_plot_sum <- renderPlotly({
-    user_sum <- df %>%
-      select(intersect(ends_with("users"), contains("catalog")), date_dash) %>%
-      gather(user_type, count, search_requests_classic_catalog_users:search_requests_shared_catalog_users) %>%
-      mutate(s_year = year(date_dash)) %>%
+    user_sum <- prep_data(df, "user_type", cat = "catalog", users = TRUE) %>%
       group_by(user_type, s_year) %>%
       summarise(tot = sum(count)) %>%
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
-             user_lab = case_when(grepl("classic",user_type) ~ "Classic",
-                                  grepl("shared",user_type) ~ "Shared"),
+             user_lab = tool_label(user_type),
              hex = cat_color(user_lab))
     p <- plot_ly(user_sum, x= ~tot, y = ~user_lab
                  ,type = "bar"
@@ -250,14 +231,52 @@ server <- function(input, output, session) {
     ggplotly(p) %>% 
       config(displayModeBar = F)
   })
+  
+  # output$user_plot <- renderChart({
+  #   if (input$Utime_var == "Monthly"){
+  #     monthly <- var() %>%
+  #       group_by(transaction_type, s_month) %>%
+  #       summarise(count = sum(count)) %>%
+  #       ungroup() %>%
+  #       mutate(transaction_type = var_to_label(transaction_type))
+  #     
+  #     n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+  #     tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
+  #     n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
+  #     return(n)
+  #     
+  #   } 
+  #   else if (input$Utime_var == "Daily") {
+  #     daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type))
+  #     
+  #     n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
+  #     xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+  #     tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
+  #     n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
+  #     return(n) 
+  #   } 
+  #   else if (input$Utime_var == "Quarterly") {
+  #     quarterly <- var() %>%
+  #       group_by(transaction_type, s_quarter) %>%
+  #       summarise(count = sum(count)) %>%
+  #       ungroup() %>%
+  #       mutate(transaction_type = var_to_label(transaction_type))
+  #     
+  #     n_base <- nPlot(count ~ s_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+  #     tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
+  #     n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
+  #     return(n)
+  #   }
+  #   
+  # })
 
   output$card_plot <- renderChart({
 
-    if (input$time_var_card == "Monthly"){
+    if (input$Ctime_var == "Monthly"){
       monthly <- prep_card(df) %>%
         group_by(s_month) %>%
         summarise(count = sum(count))
-      n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_plot_for_size_card_width"]])
+      n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>New card sign ups</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#",plotID = "card_plot", tooltip = tt)
       n$chart(showControls = FALSE)
@@ -265,10 +284,10 @@ server <- function(input, output, session) {
       n$chart(color = "#! function(d){ return '#6baed6'} !#")
       return(n)
     }
-    else if (input$time_var_card == "Daily") {
+    else if (input$Ctime_var == "Daily") {
       daily <- prep_card(df)
 
-      n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_plot_for_size_card_width"]])
+      n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_Cplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>New card sign ups</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, plotID = "card_plot", tt)
@@ -277,12 +296,12 @@ server <- function(input, output, session) {
       n$chart(color = "#! function(d){ return '#6baed6'} !#")
       return(n)
     }
-    else if (input$time_var_card == "Quarterly") {
+    else if (input$Ctime_var == "Quarterly") {
       quarterly <- prep_card(df) %>%
         group_by(s_quarter) %>%
         summarise(count = sum(count))
 
-      n_base <- nPlot(count ~ s_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_plot_for_size_card_width"]])
+      n_base <- nPlot(count ~ s_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>New card sign ups</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "card_plot", tooltip = tt)
       n$chart(showControls = FALSE)
@@ -294,36 +313,36 @@ server <- function(input, output, session) {
   })
   
   output$trans_plot <- renderChart({
-    if (input$time_var == "Monthly"){
+    if (input$Ttime_var == "Monthly"){
       monthly <- var() %>%
         group_by(transaction_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(transaction_type = var_to_label(transaction_type))
       
-      n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_plot_for_size_width"]])
+      n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
       return(n)
       
     } 
-    else if (input$time_var == "Daily") {
+    else if (input$Ttime_var == "Daily") {
       daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type))
       
-      n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_plot_for_size_width"]])
+      n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Tplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
       return(n) 
     } 
-    else if (input$time_var == "Quarterly") {
+    else if (input$Ttime_var == "Quarterly") {
       quarterly <- var() %>%
         group_by(transaction_type, s_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(transaction_type = var_to_label(transaction_type))
       
-      n_base <- nPlot(count ~ s_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_plot_for_size_width"]])
+      n_base <- nPlot(count ~ s_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
       return(n)

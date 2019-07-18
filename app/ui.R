@@ -57,16 +57,35 @@ ui <- dashboardPage(title="Digital dashboard",
                                        )
                                        # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
                                        ,fluidRow(box(width = 11,"*Digital transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
-                      ),
+                        ),
+                        tabItem(tabName = "users"
+                                # ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
+                                # ,valueBoxOutput("u1",width = 3)
+                                # ,valueBoxOutput("u2",width = 3)
+                                # ,valueBoxOutput("u3",width = 3)
+                                # ,valueBoxOutput("u4",width = 3)
+                                ,fluidRow(
+                                  column(width = 9
+                                         ,fluidRow(box(width = 12, chartOutput(outputId = "users_plot", "nvd3"),plotOutput("Uplot_for_size")))
+                                  )
+                                  ,column(width = 3
+                                          ,fluidRow(box(width=NULL
+                                                        ,radioButtons(inputId = "users_vars", label = "Variable", choices = user_choices,
+                                                                      selected = "nc_users")
+                                                        ,radioButtons(inputId = "Utime_var", label = "Time", choices = time_choices,
+                                                                      selected = "Monthly")))
+                                  ) # trans controls col
+                                ) # trans row
+                        ), # trans tab
                       tabItem(tabName = "cards"
                               ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot_tab", width = NULL)),column(width=4))
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("plot_for_size_card")))
+                                       ,fluidRow(box(width = 12, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("Cplot_for_size")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
-                                                      ,radioButtons(inputId = "time_var_card", label = "Time", choices = time_choices, selected = "Monthly")))
+                                                      ,radioButtons(inputId = "Ctime_var", label = "Time", choices = time_choices, selected = "Monthly")))
                                 ) # control col
                               ) # row
                       ),
@@ -78,13 +97,13 @@ ui <- dashboardPage(title="Digital dashboard",
                               ,valueBoxOutput("t4",width = 3)
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("plot_for_size")))
+                                       ,fluidRow(box(width = 12, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
                                                       ,radioButtons(inputId = "vars", label = "Variable", choices = var_choices,
                                                                     selected = "sierra_trans")
-                                                      ,radioButtons(inputId = "time_var", label = "Time", choices = time_choices,
+                                                      ,radioButtons(inputId = "Ttime_var", label = "Time", choices = time_choices,
                                                                     selected = "Monthly")))
                                 ) # trans controls col
                               ) # trans row
