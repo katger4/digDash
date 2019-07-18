@@ -5,7 +5,7 @@ server <- function(input, output, session) {
   })
   
   user_var <- reactive({
-    switch(input$vars, "big_user" = prep_user(df, "sierra"), "cat_user" = prep_user(df, "overdrive"))
+    switch(input$users_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", users = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", users = TRUE))
   })
   
   ### VALUE BOXES ###
@@ -232,43 +232,53 @@ server <- function(input, output, session) {
       config(displayModeBar = F)
   })
   
-  # output$user_plot <- renderChart({
-  #   if (input$Utime_var == "Monthly"){
-  #     monthly <- var() %>%
-  #       group_by(transaction_type, s_month) %>%
-  #       summarise(count = sum(count)) %>%
-  #       ungroup() %>%
-  #       mutate(transaction_type = var_to_label(transaction_type))
-  #     
-  #     n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-  #     tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
-  #     n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
-  #     return(n)
-  #     
-  #   } 
-  #   else if (input$Utime_var == "Daily") {
-  #     daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type))
-  #     
-  #     n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
-  #     xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
-  #     tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
-  #     n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
-  #     return(n) 
-  #   } 
-  #   else if (input$Utime_var == "Quarterly") {
-  #     quarterly <- var() %>%
-  #       group_by(transaction_type, s_quarter) %>%
-  #       summarise(count = sum(count)) %>%
-  #       ungroup() %>%
-  #       mutate(transaction_type = var_to_label(transaction_type))
-  #     
-  #     n_base <- nPlot(count ~ s_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-  #     tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
-  #     n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
-  #     return(n)
-  #   }
-  #   
-  # })
+  output$users_plot <- renderChart({
+    if (input$Utime_var == "Monthly"){
+      monthly <- user_var() %>%
+        group_by(user_type, s_month) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(user_type = var_to_label(user_type),
+               user_lab = tool_label(user_type),
+               hex = cat_color(user_type))
+
+      n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
+      n$chart(color = unique(monthly$hex))
+      return(n)
+
+    }
+    else if (input$Utime_var == "Daily") {
+      daily <- user_var() %>%
+        mutate(user_type = var_to_label(user_type),
+               user_lab = tool_label(user_type),
+               hex = cat_color(user_type))
+
+      n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"users_plot", tt)
+      n$chart(color = unique(daily$hex))
+      return(n)
+    }
+    else if (input$Utime_var == "Quarterly") {
+      quarterly <- user_var() %>%
+        group_by(user_type, s_quarter) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(user_type = var_to_label(user_type),
+               user_lab = tool_label(user_type),
+               hex = cat_color(user_type))
+
+      n_base <- nPlot(count ~ s_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
+      n$chart(color = unique(quarterly$hex))
+      return(n)
+    }
+
+  })
 
   output$card_plot <- renderChart({
 
