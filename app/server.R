@@ -1,9 +1,3 @@
-
-source('global.R')
-source('ui.R')
-
-df <- readRDS(file = "./data/jun_19.rds") 
-
 server <- function(input, output, session) {
   ### Trans VARIABLE ###
   var <- reactive({
@@ -257,6 +251,48 @@ server <- function(input, output, session) {
       config(displayModeBar = F)
   })
   
+  output$card_plot <- renderChart2({
+
+    if (input$time_var_card == "Monthly"){
+      monthly <- prep_card(df) %>%
+        group_by(s_month) %>%
+        summarise(count = sum(count))
+      n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_plot_for_size_card_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>New card sign ups</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", tooltip = tt)
+      n$chart(showControls = FALSE)
+      n$chart(showLegend = FALSE)
+      n$chart(color = "#! function(d){ return '#6baed6'} !#")
+      return(n)
+    }
+    else if (input$time_var_card == "Daily") {
+      daily <- prep_card(df)
+
+      n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_plot_for_size_card_width"]])
+      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      tt <- "#! function(key, x, y){ return '<p><strong>New card sign ups</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, tt)
+      # n$chart(showControls = FALSE)
+      n$chart(showLegend = FALSE)
+      n$chart(color = "#! function(d){ return '#6baed6'} !#")
+      return(n)
+    } 
+    else if (input$time_var_card == "Quarterly") {
+      quarterly <- prep_card(df) %>%
+        group_by(s_quarter) %>%
+        summarise(count = sum(count))
+
+      n_base <- nPlot(count ~ s_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_plot_for_size_card_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>New card sign ups</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", tooltip = tt)
+      n$chart(showControls = FALSE)
+      n$chart(showLegend = FALSE)
+      n$chart(color = "#! function(d){ return '#6baed6'} !#")
+      return(n)
+    }
+    
+  })
+  
   output$trans_plot <- renderChart({
     if (input$time_var == "Monthly"){
       monthly <- var() %>%
@@ -270,7 +306,8 @@ server <- function(input, output, session) {
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", tooltip = tt)
       return(n)
       
-    } else if (input$time_var == "Daily") {
+    } 
+    else if (input$time_var == "Daily") {
       daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type))
       
       n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_plot_for_size_width"]])
@@ -278,7 +315,8 @@ server <- function(input, output, session) {
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, tt)
       return(n) 
-    } else if (input$time_var == "Quarterly") {
+    } 
+    else if (input$time_var == "Quarterly") {
       quarterly <- var() %>%
         group_by(transaction_type, s_quarter) %>%
         summarise(count = sum(count)) %>%
@@ -294,5 +332,3 @@ server <- function(input, output, session) {
   })
   
 }
-
-shinyApp(ui = ui, server = server)

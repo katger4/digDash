@@ -26,7 +26,8 @@ ui <- dashboardPage(title="Digital dashboard",
                                  "-webkit-filter: blur(0.000001px);"
                       ),
                       shinyDashboardThemes(theme = "poor_mans_flatly"),
-                      tabItems(tabItem(tabName = "overview",
+                      tabItems(
+                        tabItem(tabName = "overview",
                                        fluidRow(box(width=12
                                                     ,title = span(HTML("<strong>Daily Digital Data Drop dashboard</strong>")) 
                                                     ,solidHeader = TRUE #,includeHTML("about.html")
@@ -60,14 +61,14 @@ ui <- dashboardPage(title="Digital dashboard",
                       tabItem(tabName = "cards"
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("plot_for_size")))
+                                       ,fluidRow(box(width = 12, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("plot_for_size_card")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
-                                                      ,radioButtons(inputId = "time_var", label = "Time", choices = time_choices, selected = "Monthly")))
-                                )
-                              )
-                      )),
+                                                      ,radioButtons(inputId = "time_var_card", label = "Time", choices = time_choices, selected = "Monthly")))
+                                ) # control col
+                              ) # row
+                      ),
                       tabItem(tabName = "transactions"
                               ,fluidRow(column(width=4),column(width=4,valueBoxOutput("tot", width = NULL)),column(width=4))
                               ,valueBoxOutput("t1",width = 3)
@@ -84,10 +85,11 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                     selected = "sierra_trans")
                                                       ,radioButtons(inputId = "time_var", label = "Time", choices = time_choices,
                                                                     selected = "Monthly")))
-                                )
-                              )
-                      ))
+                                ) # trans controls col
+                              ) # trans row
+                      ) # trans tab
+                      ) # all tabs
                       
                       
-                    )
+                    ) # db body
 )
