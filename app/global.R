@@ -94,22 +94,14 @@ prep_card <- function(df) {
     arrange(s_date) 
 }
 
-format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, tooltip) {
+format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, tooltip) {
   n_base$chart(margin = margin)
   n_base$yAxis(tickFormat = ytickFormat)
   if (!missing(xtickFormat)) {
     n_base$xAxis(tickFormat = xtickFormat)
   }
-  n_base$addParams(dom = 'trans_plot')
+  n_base$addParams(dom = plotID)
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
-
-# s <- prep_trans(df, "sierra")
-# 
-# monthly <- s %>%
-#   group_by(transaction_type, s_month) %>%
-#   summarise(count = sum(count)) %>%
-#   ungroup() %>%
-#   mutate(transaction_type = var_to_label(transaction_type))
 

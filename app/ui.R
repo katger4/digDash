@@ -59,6 +59,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                        ,fluidRow(box(width = 11,"*Digital transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                       ),
                       tabItem(tabName = "cards"
+                              ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot_tab", width = NULL)),column(width=4))
                               ,fluidRow(
                                 column(width = 9
                                        ,fluidRow(box(width = 12, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("plot_for_size_card")))
