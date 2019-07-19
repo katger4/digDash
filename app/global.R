@@ -4,6 +4,7 @@ library(dashboardthemes)
 library(Cairo)
 options(shiny.usecairo=T)
 library(shinycssloaders)
+library(shinyjs)
 
 library(tidyverse)
 library(scales)
@@ -94,18 +95,15 @@ create_quarters <- function(ymd_date) {
           )
 }
 
-prep_card <- function(df) {
-  df %>% 
-    select(new_card_sign_ups, date_dash) %>%
-    rename(count = new_card_sign_ups) %>%
-    mutate(s_month = month(date_dash, label = TRUE),
-           s_date = create_d3_date(date_dash),
-           s_quarter = create_quarters(date_dash)
-    ) %>%
-    arrange(s_date) 
+create_fy_month <- function(ymd_date) {
+  factor(month(ymd_date), levels = c(7:12, 1:6), labels = c(month.abb[7:12], month.abb[1:6]))
 }
 
-prep_data <- function(df, key, cat, users, views, trans_name, trans_sum) {
+create_fy_year <- function(ymd_date) {
+  ifelse(between(month(ymd_date),7,12), year(ymd_date)+1, year(ymd_date))
+}
+
+prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
   if (!missing(cat)){  
     if (cat == "not catalog" & !missing(users)) {
       selected <- df %>% select(ends_with("users"), -contains("catalog"), date_dash)
@@ -123,24 +121,26 @@ prep_data <- function(df, key, cat, users, views, trans_name, trans_sum) {
   if (!missing(trans_sum)) {
     selected <- df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash)
   }
+  
+  if (missing(card)) {
+    gathered <- selected %>% gather_(key = key, value = "count", setdiff(names(.), 'date_dash'))
+  }
+  else {
+    gathered <- df %>% 
+      select(new_card_sign_ups, date_dash) %>%
+      rename(count = new_card_sign_ups)
+  }
 
-  selected %>%
-    gather_(key = key, value = "count", setdiff(names(.), 'date_dash')) %>%
+  gathered %>%
     mutate(s_month = month(date_dash, label = TRUE),
            s_date = create_d3_date(date_dash),
            s_quarter = create_quarters(date_dash),
-           s_year = year(date_dash)
+           s_year = year(date_dash),
+           f_month = create_fy_month(date_dash),
+           f_year = create_fy_year(date_dash)
     ) %>%
     arrange(s_date)
 }
-
-# group_by_time <- function(prepped_df, category_var, time_var) {
-#   # category_var <- as.name(category_var)
-#   # time_var <- as.name(time_var)
-#   prepped_df %>%
-#     group_by_at(vars(category_var,time_var)) %>%
-#     summarise(count = sum(count))
-# }
 
 format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, tooltip) {
   n_base$chart(margin = margin)
@@ -153,3 +153,17 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   return(n_base) 
 }
 
+# u <- prep_data(df, key = "user_type", cat="catalog", users = TRUE)
+# 
+# monthly <- u %>%
+#   group_by(user_type, f_month, s_month) %>%
+#   summarise(count = sum(count)) %>%
+#   ungroup() %>%
+#   mutate(user_type = var_to_label(user_type),
+#          user_lab = tool_label(user_type),
+#          hex = cat_color(user_type))
+# n_base <- nPlot(count ~ f_month, group = "user_lab", data = monthly, type = "multiBarChart")
+# tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+# n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
+# n$chart(color = unique(monthly$hex))
+# n

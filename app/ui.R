@@ -18,7 +18,9 @@ ui <- dashboardPage(title="Digital dashboard",
                                                               ,menuItem("New Cards", tabName = "cards", icon = icon("id-card"))
                                                               ,menuItem("Digital Transactions", tabName = "transactions", icon = icon("arrows-alt-h"))
                     )),
-                    dashboardBody(# hide errors
+                    dashboardBody(
+                      useShinyjs(),
+                      # hide errors
                       tags$style(type="text/css",
                                  ".shiny-output-error { visibility: hidden; }",
                                  ".shiny-output-error:before { visibility: hidden; }",
@@ -109,13 +111,14 @@ ui <- dashboardPage(title="Digital dashboard",
                       ),
                       tabItem(tabName = "transactions"
                               ,fluidRow(column(width=4),column(width=4,valueBoxOutput("tot", width = NULL)),column(width=4))
-                              ,valueBoxOutput("t1",width = 3)
-                              ,valueBoxOutput("t2",width = 3)
-                              ,valueBoxOutput("t3",width = 3)
-                              ,valueBoxOutput("t4",width = 3)
+                              ,fluidRow(width = 12
+                                        ,valueBoxOutput("t1",width = 3)
+                                        ,valueBoxOutput("t2",width = 3)
+                                        ,valueBoxOutput("t3",width = 3)
+                                        ,valueBoxOutput("t4",width = 3))
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size")))
+                                       ,fluidRow(box(width = 12, height = 400, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
@@ -125,6 +128,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                     selected = "Monthly")))
                                 ) # trans controls col
                               ) # trans row
+                              ,fluidRow(box(id = "od_foot",width = 11,"*Overdrive no longer offers holds as of June 6, 2019.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                       ) # trans tab
                       ) # all tabs
                       
