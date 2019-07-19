@@ -22,27 +22,135 @@ server <- function(input, output, session) {
     )
   })
   
-  output$kan_visits <- renderValueBox({
-      text <- HTML(paste("Kanopy visits",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+  # output$kan_visits <- renderValueBox({
+  #     text <- HTML(paste("Kanopy visits",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+  #   valueBox(
+  #     comma_format()(sum(df %>% select(kanopy_visits))), text, icon = icon("eye"),
+  #     color = "blue"
+  #   )
+  # })
+  
+  # output$kan_plays <- renderValueBox({
+  #     text <- HTML(paste("Kanopy plays",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+  #   valueBox(
+  #     comma_format()(sum(df %>% select(kanopy_plays))), text, icon = icon("youtube"),
+  #     color = "blue"
+  #   )
+  # })
+  
+  output$views_tot <- renderValueBox({
+    text <- HTML(paste("Page views",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
-      comma_format()(sum(df %>% select(kanopy_visits))), text, icon = icon("eye"),
+      comma_format()(sum(views_var()$count)), text, icon = icon("eye"),
       color = "blue"
     )
   })
   
-  output$kan_plays <- renderValueBox({
-      text <- HTML(paste("Kanopy plays",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+  output$v2 <- renderValueBox({
+    v_type <- switch(input$views_vars, "nc_users" = 'Encore', "c_users" = 'Classic') 
+    if (input$views_vars == "nc_users"){
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
+        color = "blue"
+      )
+    } else {
+      text <- HTML(paste(var_to_label(v_type), "catalog page views", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
+        color = "blue"
+      )
+    }
+  })
+
+  output$v3 <- renderValueBox({
+    v_type <- switch(input$views_vars, "nc_users" = 'Website', "c_users" = 'Shared') 
+    
+    if (input$views_vars == "nc_users"){
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("newspaper"),
+        color = "blue"
+      )
+    } else {
+      text <- HTML(paste(var_to_label(v_type), "catalog page views", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
+        color = "blue"
+      )
+    }
+  })
+  
+  output$users_tot <- renderValueBox({
+    text <- HTML(paste("Unique users",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
-      comma_format()(sum(df %>% select(kanopy_plays))), text, icon = icon("youtube"),
+      comma_format()(sum(user_var()$count)), text, icon = icon("users"),
       color = "blue"
     )
   })
   
+  output$u1 <- renderValueBox({
+    v_type <- switch(input$users_vars, "nc_users" = 'CloudLibrary', "c_users" = '') 
+    if (input$users_vars == "nc_users"){
+      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
+        color = "blue"
+      )
+    }
+  })
+  
+  output$u2 <- renderValueBox({
+    v_type <- switch(input$users_vars, "nc_users" = 'Overdrive', "c_users" = 'Classic') 
+    if (input$users_vars == "nc_users"){
+      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
+        color = "blue"
+      )
+    } else {
+      text <- HTML(paste(var_to_label(v_type), "catalog users", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
+        color = "blue"
+      )
+    }
+  })
+  
+  output$u3 <- renderValueBox({
+    v_type <- switch(input$users_vars, "nc_users" = 'Encore', "c_users" = 'Shared') 
+    
+    if (input$users_vars == "nc_users"){
+      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
+        color = "blue"
+      )
+    } else {
+      text <- HTML(paste(var_to_label(v_type), "catalog users", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
+        color = "blue"
+      )
+    }
+  })
+  
+  output$u4 <- renderValueBox({
+    v_type <- switch(input$users_vars, "nc_users" = 'Website', "c_users" = '') 
+    if (input$users_vars == "nc_users"){
+      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("newspaper"),
+        color = "blue"
+      )
+    }
+  })
+
   output$tot <- renderValueBox({
     v <- if (input$vars == "sierra_trans") {'Sierra'}
             else if (input$vars == "overdrive_trans") {'Overdrive'}
             else if (input$vars == "cloud_trans") {'CloudLibrary'}
-    text <- HTML(paste(v, "transactions to date",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+    text <- HTML(paste(v, "transactions",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
       comma_format()(sum(var()$count)), text, icon = icon("stopwatch"),
       color = "blue"
@@ -242,8 +350,7 @@ server <- function(input, output, session) {
         group_by(user_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
-        mutate(user_type = var_to_label(user_type),
-               user_lab = tool_label(user_type),
+        mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type))
       
       n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
@@ -255,8 +362,7 @@ server <- function(input, output, session) {
     }
     else if (input$Vtime_var == "Daily") {
       daily <- views_var() %>%
-        mutate(user_type = var_to_label(user_type),
-               user_lab = tool_label(user_type),
+        mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type))
       
       n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Vplot_for_size_width"]])
@@ -271,8 +377,7 @@ server <- function(input, output, session) {
         group_by(user_type, s_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
-        mutate(user_type = var_to_label(user_type),
-               user_lab = tool_label(user_type),
+        mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type))
       
       n_base <- nPlot(count ~ s_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])

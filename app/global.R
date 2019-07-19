@@ -16,8 +16,11 @@ var_choices <- c("Sierra transactions"="sierra_trans",
                  "Overdrive transactions" = "overdrive_trans",
                  "CloudLibrary transactions" = "cloud_trans")
 
+views_choices <- c("Encore and Website" = "nc_users",
+                 "Classic and Shared catalog" = "c_users")
+
 user_choices <- c("Non catalog users" = "nc_users",
-                 "Catalog users" = "c_users")
+                  "Catalog users" = "c_users")
 
 time_choices <- c("Monthly","Daily","Quarterly")
 

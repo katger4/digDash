@@ -59,18 +59,18 @@ ui <- dashboardPage(title="Digital dashboard",
                                        ,fluidRow(box(width = 11,"*Digital transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                         ),
                         tabItem(tabName = "views"
-                                # ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
-                                # ,valueBoxOutput("u1",width = 3)
-                                # ,valueBoxOutput("u2",width = 3)
-                                # ,valueBoxOutput("u3",width = 3)
-                                # ,valueBoxOutput("u4",width = 3)
+                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("views_tot", width = NULL)),column(width=4))
+                                ,valueBoxOutput("v1",width = 3)
+                                ,valueBoxOutput("v2",width = 3)
+                                ,valueBoxOutput("v3",width = 3)
+                                ,valueBoxOutput("v4",width = 3)
                                 ,fluidRow(
                                   column(width = 9
                                          ,fluidRow(box(width = 12, chartOutput(outputId = "views_plot", "nvd3"),plotOutput("Vplot_for_size")))
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
-                                                        ,radioButtons(inputId = "views_vars", label = "Variable", choices = user_choices,
+                                                        ,radioButtons(inputId = "views_vars", label = "Variable", choices = views_choices,
                                                                       selected = "nc_users")
                                                         ,radioButtons(inputId = "Vtime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
@@ -78,11 +78,11 @@ ui <- dashboardPage(title="Digital dashboard",
                                 ) # views row
                         ), # views tab
                         tabItem(tabName = "users"
-                                # ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
-                                # ,valueBoxOutput("u1",width = 3)
-                                # ,valueBoxOutput("u2",width = 3)
-                                # ,valueBoxOutput("u3",width = 3)
-                                # ,valueBoxOutput("u4",width = 3)
+                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
+                                ,valueBoxOutput("u1",width = 3)
+                                ,valueBoxOutput("u2",width = 3)
+                                ,valueBoxOutput("u3",width = 3)
+                                ,valueBoxOutput("u4",width = 3)
                                 ,fluidRow(
                                   column(width = 9
                                          ,fluidRow(box(width = 12, chartOutput(outputId = "users_plot", "nvd3"),plotOutput("Uplot_for_size")))
