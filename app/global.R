@@ -3,6 +3,7 @@ library(shinydashboard)
 library(dashboardthemes)
 library(Cairo)
 options(shiny.usecairo=T)
+library(shinycssloaders)
 
 library(tidyverse)
 library(scales)
@@ -29,14 +30,30 @@ df <- readRDS(file = "./data/jun_19.rds")
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
   col<- case_when(grepl("website",var_name) ~ "#35978f",
-            grepl("encore",var_name) ~ "#74add1",
-            grepl("overdrive",var_name) ~ "#9970ab",
-            grepl("cloud",var_name) ~ "#5aae61",
-            grepl("shared",var_name) ~ "#c2a5cf",
-            grepl("classic",var_name) ~ "#a6dba0",
-            grepl("sierra",var_name) ~ "#80cdc1",
-            grepl("card",var_name) ~ "#35978f",
-            grepl("kanopy",var_name) ~ "#01665e")
+                  grepl("encore",var_name) ~ "#74add1",
+                  grepl("overdrive",var_name) ~ "#9970ab",
+                  grepl("cloud",var_name) ~ "#5aae61",
+                  grepl("shared",var_name) ~ "#c2a5cf",
+                  grepl("classic",var_name) ~ "#a6dba0",
+                  grepl("sierra",var_name) ~ "#80cdc1",
+                  grepl("card",var_name) ~ "#35978f",
+                  grepl("kanopy",var_name) ~ "#01665e")
+  return(col)
+}
+
+trans_shade <- function(var_name) {
+  var_name <- tolower(var_name)
+  col<- case_when(grepl("sierra",var_name) & grepl("checkins",var_name) ~ "#addfd7",
+                  grepl("sierra",var_name) & grepl("checkouts",var_name) ~ "#66a49a",
+                  grepl("sierra",var_name) & grepl("renewals",var_name) ~ "#426962",
+                  grepl("overdrive",var_name) & grepl("audio",var_name) & grepl("checkouts",var_name) ~ "#cab6d4",
+                  grepl("overdrive",var_name) & grepl("audio",var_name) & grepl("holds",var_name) ~ "#ad8dbc",
+                  grepl("overdrive",var_name) & grepl("ebook",var_name) & grepl("checkouts",var_name) ~ "#7a5a89",
+                  grepl("overdrive",var_name) & grepl("ebook",var_name) & grepl("holds",var_name) ~ "#4e3a58",
+                  grepl("cloud",var_name) & grepl("audio",var_name) & grepl("checkouts",var_name) ~ "#aad5ae",
+                  grepl("cloud",var_name) & grepl("audio",var_name) & grepl("holds",var_name) ~ "#7bbe81",
+                  grepl("cloud",var_name) & grepl("ebook",var_name) & grepl("checkouts",var_name) ~ "#488b4e",
+                  grepl("cloud",var_name) & grepl("ebook",var_name) & grepl("holds",var_name) ~ "#2e5932")
   return(col)
 }
 

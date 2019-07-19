@@ -20,8 +20,8 @@ ui <- dashboardPage(title="Digital dashboard",
                     )),
                     dashboardBody(# hide errors
                       tags$style(type="text/css",
-                                 # ".shiny-output-error { visibility: hidden; }",
-                                 # ".shiny-output-error:before { visibility: hidden; }",
+                                 ".shiny-output-error { visibility: hidden; }",
+                                 ".shiny-output-error:before { visibility: hidden; }",
                                  "-webkit-font-smoothing: antialiased;",
                                  "-webkit-filter: blur(0.000001px);"
                       ),
@@ -37,22 +37,21 @@ ui <- dashboardPage(title="Digital dashboard",
                                        ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
                                        ,fluidRow(column(width = 4
                                                         ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(contains("views"), -contains("catalog")))),"</b>page views"))
-                                                                      ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")))
+                                                                      ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")%>% withSpinner(color="#0dc5c1")))
                                                         ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(contains("views"), contains("catalog"))))),"</b>catalog page views"))
-                                                                      ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")))
+                                                                      ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
                                        ,column(width = 4
                                                ,box(HTML(paste("<b>",comma_format()(sum(df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary")))),"</b>digital transactions*"))
                                                     ,width = NULL
-                                                    ,plotlyOutput(outputId = "trans_plot_sum", height = "350px"
-                                                    )
+                                                    ,plotlyOutput(outputId = "trans_plot_sum", height = "350px") %>% withSpinner(color="#0dc5c1")
                                                )
                                        )
                                        ,column(width = 4
                                                ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("catalog")))),"</b>unique users"))
-                                                             ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")))
+                                                             ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")%>% withSpinner(color="#0dc5c1")))
                                                ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("catalog"))))),"</b>unique catalog users"))
-                                                             ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")))
+                                                             ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
                                        )
                                        # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))

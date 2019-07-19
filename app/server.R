@@ -448,7 +448,7 @@ server <- function(input, output, session) {
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#",plotID = "card_plot", tooltip = tt)
       n$chart(showControls = FALSE)
       n$chart(showLegend = FALSE)
-      n$chart(color = "#! function(d){ return '#6baed6'} !#")
+      n$chart(color = "#! function(d){ return '#4272B8'} !#")
       return(n)
     }
     else if (input$Ctime_var == "Daily") {
@@ -460,7 +460,7 @@ server <- function(input, output, session) {
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, plotID = "card_plot", tt)
       # n$chart(showControls = FALSE)
       n$chart(showLegend = FALSE)
-      n$chart(color = "#! function(d){ return '#6baed6'} !#")
+      n$chart(color = "#! function(d){ return '#4272B8'} !#")
       return(n)
     }
     else if (input$Ctime_var == "Quarterly") {
@@ -473,7 +473,7 @@ server <- function(input, output, session) {
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "card_plot", tooltip = tt)
       n$chart(showControls = FALSE)
       n$chart(showLegend = FALSE)
-      n$chart(color = "#! function(d){ return '#6baed6'} !#")
+      n$chart(color = "#! function(d){ return '#4272B8'} !#")
       return(n)
     }
 
@@ -485,21 +485,25 @@ server <- function(input, output, session) {
         group_by(transaction_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
-        mutate(transaction_type = var_to_label(transaction_type))
+        mutate(transaction_type = var_to_label(transaction_type),
+               hex = trans_shade(transaction_type))
       
       n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
+      n$chart(color = unique(monthly$hex))
       return(n)
       
     } 
     else if (input$Ttime_var == "Daily") {
-      daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type))
+      daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type),
+                                hex = trans_shade(transaction_type))
       
       n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Tplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
+      n$chart(color = unique(daily$hex))
       return(n) 
     } 
     else if (input$Ttime_var == "Quarterly") {
@@ -507,11 +511,13 @@ server <- function(input, output, session) {
         group_by(transaction_type, s_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
-        mutate(transaction_type = var_to_label(transaction_type))
+        mutate(transaction_type = var_to_label(transaction_type),
+               hex = trans_shade(transaction_type))
       
       n_base <- nPlot(count ~ s_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
+      n$chart(color = unique(quarterly$hex))
       return(n)
     }
 
