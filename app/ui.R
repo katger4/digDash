@@ -58,6 +58,25 @@ ui <- dashboardPage(title="Digital dashboard",
                                        # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
                                        ,fluidRow(box(width = 11,"*Digital transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                         ),
+                        tabItem(tabName = "views"
+                                # ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
+                                # ,valueBoxOutput("u1",width = 3)
+                                # ,valueBoxOutput("u2",width = 3)
+                                # ,valueBoxOutput("u3",width = 3)
+                                # ,valueBoxOutput("u4",width = 3)
+                                ,fluidRow(
+                                  column(width = 9
+                                         ,fluidRow(box(width = 12, chartOutput(outputId = "views_plot", "nvd3"),plotOutput("Vplot_for_size")))
+                                  )
+                                  ,column(width = 3
+                                          ,fluidRow(box(width=NULL
+                                                        ,radioButtons(inputId = "views_vars", label = "Variable", choices = user_choices,
+                                                                      selected = "nc_users")
+                                                        ,radioButtons(inputId = "Vtime_var", label = "Time", choices = time_choices,
+                                                                      selected = "Monthly")))
+                                  ) # views controls col
+                                ) # views row
+                        ), # views tab
                         tabItem(tabName = "users"
                                 # ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
                                 # ,valueBoxOutput("u1",width = 3)
@@ -74,9 +93,9 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                       selected = "nc_users")
                                                         ,radioButtons(inputId = "Utime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
-                                  ) # trans controls col
-                                ) # trans row
-                        ), # trans tab
+                                  ) # users controls col
+                                ) # users row
+                        ), # users tab
                       tabItem(tabName = "cards"
                               ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot_tab", width = NULL)),column(width=4))
                               ,fluidRow(

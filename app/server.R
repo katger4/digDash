@@ -8,6 +8,10 @@ server <- function(input, output, session) {
     switch(input$users_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", users = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", users = TRUE))
   })
   
+  views_var <- reactive({
+    switch(input$views_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", views = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", views = TRUE))
+  })
+  
   ### VALUE BOXES ###
   
   output$card_tot <- output$card_tot_tab <- renderValueBox({
@@ -230,6 +234,54 @@ server <- function(input, output, session) {
       )
     ggplotly(p) %>% 
       config(displayModeBar = F)
+  })
+  
+  output$views_plot <- renderChart({
+    if (input$Vtime_var == "Monthly"){
+      monthly <- views_var() %>%
+        group_by(user_type, s_month) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(user_type = var_to_label(user_type),
+               user_lab = tool_label(user_type),
+               hex = cat_color(user_type))
+      
+      n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "views_plot", tooltip = tt)
+      n$chart(color = unique(monthly$hex))
+      return(n)
+      
+    }
+    else if (input$Vtime_var == "Daily") {
+      daily <- views_var() %>%
+        mutate(user_type = var_to_label(user_type),
+               user_lab = tool_label(user_type),
+               hex = cat_color(user_type))
+      
+      n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Vplot_for_size_width"]])
+      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' page views on ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"views_plot", tt)
+      n$chart(color = unique(daily$hex))
+      return(n)
+    }
+    else if (input$Vtime_var == "Quarterly") {
+      quarterly <- views_var() %>%
+        group_by(user_type, s_quarter) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(user_type = var_to_label(user_type),
+               user_lab = tool_label(user_type),
+               hex = cat_color(user_type))
+      
+      n_base <- nPlot(count ~ s_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "views_plot", tooltip = tt)
+      n$chart(color = unique(quarterly$hex))
+      return(n)
+    }
+    
   })
   
   output$users_plot <- renderChart({
