@@ -16,7 +16,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                               ,menuItem("Page Views", tabName = "views", icon = icon("eye"))
                                                               ,menuItem("Users", tabName = "users", icon = icon("users"))
                                                               ,menuItem("New Cards", tabName = "cards", icon = icon("id-card"))
-                                                              ,menuItem("Digital Transactions", tabName = "transactions", icon = icon("arrows-alt-h"))
+                                                              ,menuItem("Circulation Activity", tabName = "transactions", icon = icon("arrows-alt-h"))
                     )),
                     dashboardBody(
                       useShinyjs(),
@@ -44,7 +44,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                       ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
                                        ,column(width = 4
-                                               ,box(HTML(paste("<b>",comma_format()(sum(df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary")))),"</b>digital transactions*"))
+                                               ,box(HTML(paste("<b>",comma_format()(sum(df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary")))),"</b>circulation activity*"))
                                                     ,width = NULL
                                                     ,plotlyOutput(outputId = "trans_plot_sum", height = "350px") %>% withSpinner(color="#0dc5c1")
                                                )
@@ -57,7 +57,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                        )
                                        )
                                        # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
-                                       ,fluidRow(box(width = 11,"*Digital transactions include checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
+                                       ,fluidRow(box(width = 11,"*Circulation activity includes checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                         ),
                         tabItem(tabName = "views"
                                 ,fluidRow(column(width=4),column(width=4,valueBoxOutput("views_tot", width = NULL)),column(width=4))

@@ -148,7 +148,7 @@ server <- function(input, output, session) {
 
   output$tot <- renderValueBox({
     v <- switch(input$vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary') 
-    text <- HTML(paste(v, "transactions",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
+    text <- HTML(paste(v, "circulation",br(),"<span style='font-size:12px'>Jan 2019 - Jun 2019</span>"))
     valueBox(
       comma_format()(sum(var()$count)), text, icon = icon("exchange"),
       color = "blue"
@@ -280,7 +280,7 @@ server <- function(input, output, session) {
     for(i in 1:3){
       name <- cap_bub %>% filter(id == gp$x$data[[i]]$name) %$% grouper
       num <- cap_bub %>% filter(id == gp$x$data[[i]]$name) %$% tot
-      gp$x$data[[i]]$text = paste('<b>',name,'</b>:','\n',comma(num),' digital transactions')
+      gp$x$data[[i]]$text = paste('<b>',name,'</b> circulation:','\n',comma(num))
     }
     
     return(gp)  
