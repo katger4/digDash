@@ -26,7 +26,7 @@ user_choices <- c("Non catalog users" = "nc_users",
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
-df <- readRDS(file = "./data/jun_19.rds")
+df <- readRDS(file = "./data/today_data.rds")
 
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
@@ -87,8 +87,8 @@ create_d3_date <- function(ymd_date) {
 }
 
 create_quarters <- function(ymd_date) {
-  return (case_when(between(month(ymd_date),7,9) ~ paste('Q1',as.character(year(ymd_date))),
-                    between(month(ymd_date),10,12) ~ paste('Q2',as.character(year(ymd_date))),
+  return (case_when(between(month(ymd_date),7,9) ~ paste('Q1',as.character(year(ymd_date)+1)),
+                    between(month(ymd_date),10,12) ~ paste('Q2',as.character(year(ymd_date)+1)),
                     between(month(ymd_date),1,3) ~ paste('Q3',as.character(year(ymd_date))),
                     between(month(ymd_date),4,6) ~ paste('Q4',as.character(year(ymd_date)))
                     )
@@ -101,6 +101,10 @@ create_fy_month <- function(ymd_date) {
 
 create_fy_year <- function(ymd_date) {
   ifelse(between(month(ymd_date),7,12), year(ymd_date)+1, year(ymd_date))
+}
+
+create_fy_qtr <- function(ymd_date, fy_year) {
+  paste0("FY ", fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
 }
 
 prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
@@ -134,10 +138,11 @@ prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
   gathered %>%
     mutate(s_month = month(date_dash, label = TRUE),
            s_date = create_d3_date(date_dash),
-           s_quarter = create_quarters(date_dash),
+           # f_quater = create_fy_qtr(date_dash),
            s_year = year(date_dash),
            f_month = create_fy_month(date_dash),
-           f_year = create_fy_year(date_dash)
+           f_year = create_fy_year(date_dash),
+           s_quarter = create_fy_qtr(date_dash, f_year)
     ) %>%
     arrange(s_date)
 }
@@ -152,6 +157,14 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
+
+# view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
+#   group_by(user_type, s_year) %>%
+#   summarise(tot = sum(count)) %>%
+#   ungroup() %>%
+#   mutate(user_type = var_to_label(user_type),
+#          user_lab = tool_label(user_type),
+#          hex = cat_color(user_lab))
 
 # u <- prep_data(df, key = "user_type", cat="catalog", users = TRUE)
 # 
