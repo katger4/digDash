@@ -14,9 +14,9 @@ library(packcircles)
 library(plotly)
 library(rCharts)
 
-var_choices <- c("Sierra transactions"="sierra_trans",
-                 "Overdrive transactions" = "overdrive_trans",
-                 "CloudLibrary transactions" = "cloud_trans")
+var_choices <- c("Sierra circulation"="sierra_trans",
+                 "Overdrive circulation" = "overdrive_trans",
+                 "CloudLibrary circulation" = "cloud_trans")
 
 views_choices <- c("Encore and Website" = "nc_users",
                  "Classic and Shared catalog" = "c_users")

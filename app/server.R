@@ -148,7 +148,7 @@ server <- function(input, output, session) {
 
   output$tot <- renderValueBox({
     v <- switch(input$vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary') 
-    text <- HTML(paste(v, "circulation",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    text <- HTML(paste(v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(var()$count)), text, icon = icon("exchange"),
       color = "blue"
