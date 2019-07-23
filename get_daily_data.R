@@ -1,0 +1,34 @@
+library(tidyverse)
+library(lubridate)
+library(googledrive)
+library(googlesheets)
+
+clean_df <- function(df, ws_year) {
+  new_names <- df %>%
+    replace(., is.na(.), 0) %>%
+    mutate(date_dash = dmy(paste(X2,"-",ws_year))) %>%
+    select(-starts_with("X")) %>%
+    rename(weekday = DATE) %>%
+    rename_all(tolower) %>%
+    rename_all(str_trim) %>%
+    rename_all(~gsub('\n| ', '_', .x)) %>%
+    rename_all(~gsub('\\(|\\)', '', .x))
+  return(new_names)
+}
+
+dddd <- gs_title("Daily Digital DATA DROP ")
+
+active_sheet_name <- gs_ws_ls(dddd)[[1]]
+
+today_day <- day(as_date(today()))
+
+today_range <- today_day+2
+
+baseline <- readRDS("./app/data/today_data.rds")
+
+today_data <- dddd %>%
+  gs_read(ws = active_sheet_name, range = paste0("B2:AG",today_range), na = c("", "N/A", "NA")) %>%
+  clean_df(.,"2019") %>%
+  bind_rows(baseline)
+
+saveRDS(today_data, file = "./app/data/today_data.rds")
