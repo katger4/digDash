@@ -34,7 +34,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                     ,title = span(HTML("<strong>Daily Digital Data Drop dashboard</strong>")) 
                                                     ,solidHeader = TRUE #,includeHTML("about.html")
                                                     ,status = "primary"
-                                                    ,"January - June 2019"
+                                                    ,paste("January 1, 2019 -", latest_day_str)
                                        ))
                                        ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
                                        ,fluidRow(column(width = 4

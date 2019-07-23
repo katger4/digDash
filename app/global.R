@@ -28,6 +28,9 @@ time_choices <- c("Monthly","Daily","Quarterly")
 
 df <- readRDS(file = "./data/today_data.rds")
 
+latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
+latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
+
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
   col<- case_when(grepl("website",var_name) ~ "#35978f",
@@ -86,25 +89,16 @@ create_d3_date <- function(ymd_date) {
   return(as.double(as.POSIXct(as.Date(ymd_date),origin="1970-01-01")) * 1000)
 }
 
-create_quarters <- function(ymd_date) {
-  return (case_when(between(month(ymd_date),7,9) ~ paste('Q1',as.character(year(ymd_date)+1)),
-                    between(month(ymd_date),10,12) ~ paste('Q2',as.character(year(ymd_date)+1)),
-                    between(month(ymd_date),1,3) ~ paste('Q3',as.character(year(ymd_date))),
-                    between(month(ymd_date),4,6) ~ paste('Q4',as.character(year(ymd_date)))
-                    )
-          )
-}
-
 create_fy_month <- function(ymd_date) {
   factor(month(ymd_date), levels = c(7:12, 1:6), labels = c(month.abb[7:12], month.abb[1:6]))
 }
 
 create_fy_year <- function(ymd_date) {
-  ifelse(between(month(ymd_date),7,12), year(ymd_date)+1, year(ymd_date))
+  paste0("FY",ifelse(between(month(ymd_date),7,12), year(ymd_date)+1, year(ymd_date)))
 }
 
 create_fy_qtr <- function(ymd_date, fy_year) {
-  paste0("FY ", fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
+  paste0(fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
 }
 
 prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
@@ -138,11 +132,10 @@ prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
   gathered %>%
     mutate(s_month = month(date_dash, label = TRUE),
            s_date = create_d3_date(date_dash),
-           # f_quater = create_fy_qtr(date_dash),
            s_year = year(date_dash),
            f_month = create_fy_month(date_dash),
            f_year = create_fy_year(date_dash),
-           s_quarter = create_fy_qtr(date_dash, f_year)
+           f_quarter = create_fy_qtr(date_dash, f_year)
     ) %>%
     arrange(s_date)
 }
