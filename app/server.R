@@ -22,22 +22,6 @@ server <- function(input, output, session) {
     )
   })
   
-  # output$kan_visits <- renderValueBox({
-  #     text <- HTML(paste("Kanopy visits",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-  #   valueBox(
-  #     comma_format()(sum(df %>% select(kanopy_visits))), text, icon = icon("eye"),
-  #     color = "blue"
-  #   )
-  # })
-  
-  # output$kan_plays <- renderValueBox({
-  #     text <- HTML(paste("Kanopy plays",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-  #   valueBox(
-  #     comma_format()(sum(df %>% select(kanopy_plays))), text, icon = icon("youtube"),
-  #     color = "blue"
-  #   )
-  # })
-  
   output$views_tot <- renderValueBox({
     text <- HTML(paste("Page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
@@ -359,7 +343,7 @@ server <- function(input, output, session) {
                hex = cat_color(user_type))
       
       n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Vplot_for_size_width"]])
-      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' page views on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"views_plot", tt)
       n$chart(color = unique(daily$hex))
@@ -406,7 +390,7 @@ server <- function(input, output, session) {
                hex = cat_color(user_type))
 
       n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
-      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"users_plot", tt)
       n$chart(color = unique(daily$hex))
@@ -448,7 +432,9 @@ server <- function(input, output, session) {
       daily <- prep_data(df, card=TRUE)
 
       n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_Cplot_for_size_width"]])
-      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
+      # n_base <- nPlot(count ~ date_dash, data = daily, type = "lineChart")
+      # xFormat <- "#!function(d) {return d3.time.format.utc.utc('%Y-%m-%d')(new Date(d * 86400000));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>New card sign ups</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, plotID = "card_plot", tt)
       # n$chart(showControls = FALSE)
@@ -493,7 +479,7 @@ server <- function(input, output, session) {
                                 hex = trans_shade(transaction_type))
       
       n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Tplot_for_size_width"]])
-      xFormat <- "#!function(d) {return d3.time.format('%Y-%m-%d')(new Date(d));} !#"
+      xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
       n$chart(color = unique(daily$hex))

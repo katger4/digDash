@@ -26,7 +26,7 @@ user_choices <- c("Non catalog users" = "nc_users",
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
-df <- readRDS(file = "./data/today_data.rds")
+df <- readRDS(file = "./data/today_data.rds") 
 
 latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
 latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
@@ -150,7 +150,7 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
-
+# 
 # view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
 #   group_by(user_type, s_year) %>%
 #   summarise(tot = sum(count)) %>%
@@ -158,17 +158,17 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
 #   mutate(user_type = var_to_label(user_type),
 #          user_lab = tool_label(user_type),
 #          hex = cat_color(user_lab))
-
+# 
 # u <- prep_data(df, key = "user_type", cat="catalog", users = TRUE)
 # 
 # monthly <- u %>%
-#   group_by(user_type, f_month, s_month) %>%
+#   group_by(user_type, s_month) %>%
 #   summarise(count = sum(count)) %>%
 #   ungroup() %>%
 #   mutate(user_type = var_to_label(user_type),
 #          user_lab = tool_label(user_type),
 #          hex = cat_color(user_type))
-# n_base <- nPlot(count ~ f_month, group = "user_lab", data = monthly, type = "multiBarChart")
+# n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart")
 # tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
 # n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
 # n$chart(color = unique(monthly$hex))

@@ -35,6 +35,8 @@ today_data <- dddd %>%
   # in case script is run > 1x per day, need this to delete dup daily rows 
   arrange(desc(date_dash)) %>%
   group_by(date_dash) %>%
-  slice(1)
+  slice(1) %>%
+  select(-starts_with("kanopy")) %>%
+  ungroup()
 
 saveRDS(today_data, file = "./app/data/today_data.rds")
