@@ -3,6 +3,8 @@ library(lubridate)
 library(googledrive)
 library(googlesheets)
 
+setwd("/Users/katgertz/Desktop/digDash/")
+
 clean_df <- function(df, ws_year) {
   new_names <- df %>%
     replace(., is.na(.), 0) %>%
@@ -29,6 +31,10 @@ baseline <- readRDS("./app/data/today_data.rds")
 today_data <- dddd %>%
   gs_read(ws = active_sheet_name, range = paste0("B2:AG",today_range), na = c("", "N/A", "NA")) %>%
   clean_df(.,"2019") %>%
-  bind_rows(baseline)
+  bind_rows(baseline) %>%
+  # in case script is run > 1x per day, need this to delete dup daily rows 
+  arrange(desc(date_dash)) %>%
+  group_by(date_dash) %>%
+  slice(1)
 
 saveRDS(today_data, file = "./app/data/today_data.rds")
