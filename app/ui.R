@@ -34,25 +34,25 @@ ui <- dashboardPage(title="Digital dashboard",
                                                     ,title = span(HTML("<strong>Daily Digital Data Drop dashboard</strong>")) 
                                                     ,solidHeader = TRUE #,includeHTML("about.html")
                                                     ,status = "primary"
-                                                    ,paste("January 1, 2019 -", latest_day_str)
+                                                    ,textOutput("latest_day_str")
                                        ))
                                        ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
                                        ,fluidRow(column(width = 4
-                                                        ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(contains("views"), -contains("catalog")))),"</b>page views"))
+                                                        ,fluidRow(box(uiOutput("nc_views_tot")
                                                                       ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")%>% withSpinner(color="#0dc5c1")))
-                                                        ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(contains("views"), contains("catalog"))))),"</b>catalog page views"))
+                                                        ,fluidRow(box(uiOutput("c_views_tot")
                                                                       ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
                                        ,column(width = 4
-                                               ,box(HTML(paste("<b>",comma_format()(sum(df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary")))),"</b>circulation activity*"))
+                                               ,box(uiOutput("circ_tot")
                                                     ,width = NULL
                                                     ,plotlyOutput(outputId = "trans_plot_sum", height = "350px") %>% withSpinner(color="#0dc5c1")
                                                )
                                        )
                                        ,column(width = 4
-                                               ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("catalog")))),"</b>unique users"))
+                                               ,fluidRow(box(uiOutput("nc_user_tot")
                                                              ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")%>% withSpinner(color="#0dc5c1")))
-                                               ,fluidRow(box(HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("catalog"))))),"</b>unique catalog users"))
+                                               ,fluidRow(box(uiOutput("c_user_tot")
                                                              ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
                                        )

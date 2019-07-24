@@ -26,10 +26,10 @@ user_choices <- c("Non catalog users" = "nc_users",
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
-df <- readRDS(file = "./data/today_data.rds") 
-
-latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
-latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
+# df <- readRDS(file = "./data/today_data.rds") 
+# 
+# latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
+# latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
 
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
