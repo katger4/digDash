@@ -42,3 +42,5 @@ rsconnect/
 
 # oauth token
 shiny_app_token.rds
+*.rds
+*.csv
