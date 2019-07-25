@@ -10,7 +10,10 @@ logo_blue_gradient <- shinyDashboardLogoDIY(
   ,badgeBorderRadius = 3)
 
 ui <- dashboardPage(title="Digital dashboard",
-                    dashboardHeader(title = logo_blue_gradient,titleWidth = 250),
+                    dashboardHeader(title = logo_blue_gradient
+                                    ,titleWidth = 250
+                                    ,tags$li(class="dropdown",tags$a(href="https://github.com/katger4/digDash", icon("github"), "Source Code", target="_blank"))
+                                    ),
                     dashboardSidebar(width = 250, sidebarMenu(id = "sidebar_menu",
                                                               menuItem("Overview", tabName = "overview", icon = icon("globe"))
                                                               ,menuItem("Page Views", tabName = "views", icon = icon("eye"))
