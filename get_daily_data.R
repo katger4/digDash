@@ -26,7 +26,9 @@ today_day <- day(as_date(today()))
 
 today_range <- today_day+2
 
-baseline <- readRDS("./app/data/today_data.rds")
+# baseline <- readRDS("./app/data/today_data.rds")
+baseline_bk <- gs_title("data_drop")
+baseline <- baseline_bk %>% gs_read(ws = 1)
 
 today_data <- dddd %>%
   gs_read(ws = active_sheet_name, range = paste0("B2:AG",today_range), na = c("", "N/A", "NA")) %>%
@@ -39,4 +41,10 @@ today_data <- dddd %>%
   select(-starts_with("kanopy")) %>%
   ungroup()
 
-saveRDS(today_data, file = "./app/data/today_data.rds")
+# create new sheet
+gs_ws_new(baseline_bk, as.character(today()), input = today_data)
+# delete old sheet
+gs_ws_delete(baseline_bk, ws = 1)
+
+# saveRDS(today_data, file = "./app/data/today_data.rds")
+# write_csv(today_data, "./app/data/today_data.csv")

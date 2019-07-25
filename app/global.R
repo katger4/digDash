@@ -1,3 +1,5 @@
+library(googlesheets)
+
 library(shiny)
 library(shinydashboard)
 library(dashboardthemes)
@@ -26,8 +28,14 @@ user_choices <- c("Non catalog users" = "nc_users",
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
-# df <- readRDS(file = "./data/today_data.rds") 
-# 
+# to setup googlesheet auth (comment out once done)
+# options(httr_oob_default=TRUE) 
+# shiny_token <- gs_auth(new_user = TRUE, cache=FALSE)
+# saveRDS(shiny_token, "shiny_app_token.rds")
+# file.info("shiny_app_token.rds")
+googlesheets::gs_auth(token = "shiny_app_token.rds")
+df_ss <- gs_title("data_drop") 
+
 # latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
 # latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
 
