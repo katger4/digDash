@@ -1,9 +1,14 @@
 library(tidyverse)
 library(lubridate)
-library(googledrive)
+# library(googledrive)
 library(googlesheets)
 
 setwd("/Users/katgertz/Desktop/digDash/")
+
+# options(httr_oob_default=TRUE) 
+# shiny_token <- gs_auth(new_user = TRUE, cache=FALSE)
+# saveRDS(shiny_token, "gdd_token.rds")
+googlesheets::gs_auth(token = "gdd_token.rds")
 
 clean_df <- function(df, ws_year) {
   new_names <- df %>%
