@@ -1,31 +1,11 @@
 server <- function(input, output, session) {
   
-  df <- df_ss %>% gs_read_csv(ws = 1) %>% drop_na()
+  df <- df_ss %>% 
+    gs_read_csv(ws = 1) %>% 
+    drop_na() %>% 
+    filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
   
-  latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
-  
-  # ## Use reactiveVal with observe/invalidateLater to load Rdata
-  # data <- reactiveVal(value = NULL)
-  # observe({
-  #   invalidateLater(2000, session)
-  #   n <- new.env()
-  #   print("load data")
-  #   env <- load("workingdata.Rdata", envir = n)
-  #   data(n[[names(n)]])
-  # })
-  
-  # observe({
-  #   invalidateLater(300000,session)
-    
-    # df <- readRDS('./data/today_data.rds')
-    
-    # df <- reactiveFileReader(intervalMillis = 100, session, filePath = './data/today_data.rds', readFunc = readRDS)
-  
-  # df <- reactive({df_file()[[names(df_file())[1]]]})
-  
-  # latest_month_abbr <- reactive({
-  #   paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
-  #   })
+  latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderText({paste("January 1, 2019 -", format(max(df$date_dash), "%B %d, %Y"))})
