@@ -290,13 +290,16 @@ server <- function(input, output, session) {
       layout(xaxis = list(showgrid = F),
              yaxis = list(showgrid = F))
 
-    # needed to remove tooltip from text
-    gp$x$data[[4]]$hoverinfo = 'none'
+    # specify hoverinfo manually on circle
     for(i in 1:3){
       name <- cap_bub %>% filter(id == gp$x$data[[i]]$name) %$% grouper
       num <- cap_bub %>% filter(id == gp$x$data[[i]]$name) %$% tot
       gp$x$data[[i]]$text = paste('<b>',name,'</b> circulation:','\n',comma(num))
     }
+    
+    # specify hoverinfo manually on text
+    gp$x$data[[4]]$hoverlabel = list(bgcolor = cat_color(cap_bub$grouper))
+    gp$x$data[[4]]$hovertext = paste('<b>',cap_bub$grouper,'</b> circulation:','\n',comma(cap_bub$tot)) #overview_tooltip(cap_bub$grouper,cap_bub$tot,'circulation')
 
     return(gp)
 
