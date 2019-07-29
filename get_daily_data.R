@@ -47,7 +47,7 @@ today_data <- dddd %>%
   ungroup()
 
 # create new sheet
-gs_ws_new(baseline_bk, as.character(today()), input = today_data)
+gs_ws_new(baseline_bk, paste0(as.character(today()),'_',as.character(hour(now()))), input = today_data)
 # delete old sheet
 gs_ws_delete(baseline_bk, ws = 1)
 

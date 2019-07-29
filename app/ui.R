@@ -9,6 +9,14 @@ logo_blue_gradient <- shinyDashboardLogoDIY(
   ,badgeBackColor = "#bcbddc"
   ,badgeBorderRadius = 3)
 
+# plot_box <- (
+#   boxBackColor = "rgb(245,245,245)"
+#  ,boxBorderRadius = 0
+#  ,boxShadowSize = "0px 0px 0px"
+#  ,boxShadowColor = ""
+#  ,boxTitleSize = 19
+#  ,boxDefaultColor = "rgb(52,152,219)")
+
 ui <- dashboardPage(title="Digital dashboard",
                     dashboardHeader(title = logo_blue_gradient
                                     ,titleWidth = 250
@@ -121,7 +129,8 @@ ui <- dashboardPage(title="Digital dashboard",
                                         ,valueBoxOutput("t4",width = 3))
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, height = 400, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size")))
+                                       ,fluidRow(div(class="box", style = "overflow-y: auto; height: 400px"
+                                                     ,chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
