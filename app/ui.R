@@ -43,15 +43,17 @@ ui <- dashboardPage(title="Digital dashboard",
                       tabItems(
                         tabItem(tabName = "overview",
                                        fluidRow(box(width=12
-                                                    ,title = span(HTML("<strong>Daily Digital Data Drop dashboard</strong>")) 
+                                                    ,title = htmlOutput("latest_day_str")
+                                                      # span(paste(HTML("<strong>Daily Digital Data Drop dashboard</strong>:"),)) 
                                                     ,solidHeader = TRUE #,includeHTML("about.html")
                                                     ,status = "primary"
-                                                    ,textOutput("latest_day_str")
+                                                    ,align = "center"
                                        ))
-                                       ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
+                                       ,fluidRow(column(width=3),column(width=6,valueBoxOutput("card_tot", width = NULL)),column(width=3))
+                                       ,fluidRow(column(width=2),column(width=4,valueBoxOutput("wViews_tot", width = NULL)),column(width=4,valueBoxOutput("wUsers_tot", width = NULL)),column(width=2))
                                        ,fluidRow(column(width = 4
-                                                        ,fluidRow(box(uiOutput("nc_views_tot")
-                                                                      ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")%>% withSpinner(color="#0dc5c1")))
+                                                        # ,fluidRow(box(uiOutput("nc_views_tot")
+                                                        #               ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")%>% withSpinner(color="#0dc5c1")))
                                                         ,fluidRow(box(uiOutput("c_views_tot")
                                                                       ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
@@ -64,8 +66,8 @@ ui <- dashboardPage(title="Digital dashboard",
                                        ,column(width = 4
                                                ,fluidRow(box(uiOutput("nc_user_tot")
                                                              ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")%>% withSpinner(color="#0dc5c1")))
-                                               ,fluidRow(box(uiOutput("c_user_tot")
-                                                             ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
+                                               # ,fluidRow(box(uiOutput("c_user_tot")
+                                               #               ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                        )
                                        )
                                        # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
@@ -73,10 +75,11 @@ ui <- dashboardPage(title="Digital dashboard",
                         ),
                         tabItem(tabName = "views"
                                 ,fluidRow(column(width=4),column(width=4,valueBoxOutput("views_tot", width = NULL)),column(width=4))
+                                ,fluidRow(column(width=1)
                                 ,valueBoxOutput("v1",width = 3)
                                 ,valueBoxOutput("v2",width = 3)
                                 ,valueBoxOutput("v3",width = 3)
-                                ,valueBoxOutput("v4",width = 3)
+                                ,column(width = 2))
                                 ,fluidRow(
                                   column(width = 9
                                          ,fluidRow(box(width = 12, chartOutput(outputId = "views_plot", "nvd3"),plotOutput("Vplot_for_size")))

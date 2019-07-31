@@ -23,8 +23,8 @@ var_choices <- c("Sierra circulation"="sierra_trans",
 # views_choices <- c("Encore and Website" = "nc_users",
 #                  "Encore, Classic, and Shared catalogs" = "c_users")
 
-user_choices <- c("CloudLibrary and Overdrive" = "nc_users",
-                  "Encore, Classic, and Shared catalogs" = "c_users")
+# user_choices <- c("CloudLibrary and Overdrive" = "nc_users",
+#                   "Encore, Classic, and Shared catalogs" = "c_users")
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
@@ -33,8 +33,9 @@ time_choices <- c("Monthly","Daily","Quarterly")
 # shiny_token <- gs_auth(new_user = TRUE, cache=FALSE)
 # saveRDS(shiny_token, "shiny_app_token.rds")
 # file.info("shiny_app_token.rds")
-googlesheets::gs_auth(token = "shiny_app_token.rds")
-df_ss <- gs_title("data_drop") 
+
+# googlesheets::gs_auth(token = "shiny_app_token.rds")
+# df_ss <- gs_title("data_drop") 
 
 # latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
 # latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
@@ -88,8 +89,8 @@ tool_label <- function(col_name) {
                    grepl("Overdrive",col_name) ~ "Overdrive",
                    grepl("Cloud",col_name) ~ "CloudLibrary",
                    grepl("encore",col_name) ~ "Encore",
-                   grepl("classic",col_name) ~ "Classic",
-                   grepl("shared",col_name) ~ "Shared")
+                   grepl("classic",col_name) ~ "Classic catalog",
+                   grepl("shared",col_name) ~ "Shared catalog")
          )
 }
 
@@ -111,11 +112,13 @@ create_fy_qtr <- function(ymd_date, fy_year) {
 
 prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
   if (!missing(cat)){  
-    if (cat == "not catalog" & !missing(users)) {
-      selected <- df %>% select(ends_with("users"), -contains("catalog"), -contains("encore"), -contains("website"), date_dash)
-      } else if (cat == "catalog" & !missing(users)) {
-        selected <- df %>% select(intersect(ends_with("users"), matches("catalog|encore")), date_dash) 
-      } else if (!missing(views)) {
+    if (!missing(users)) {
+      selected <- df %>% select(ends_with("users"), -contains("website"), date_dash)
+      } 
+    # else if (cat == "catalog" & !missing(users)) {
+    #     selected <- df %>% select(intersect(ends_with("users"), matches("catalog|encore")), date_dash) 
+    #   } 
+    else if (!missing(views)) {
         selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
       } 
   }
