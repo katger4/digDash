@@ -20,11 +20,11 @@ var_choices <- c("Sierra circulation"="sierra_trans",
                  "Overdrive circulation" = "overdrive_trans",
                  "CloudLibrary circulation" = "cloud_trans")
 
-views_choices <- c("Encore and Website" = "nc_users",
-                 "Classic and Shared catalog" = "c_users")
+# views_choices <- c("Encore and Website" = "nc_users",
+#                  "Encore, Classic, and Shared catalogs" = "c_users")
 
-user_choices <- c("Non catalog users" = "nc_users",
-                  "Catalog users" = "c_users")
+user_choices <- c("CloudLibrary and Overdrive" = "nc_users",
+                  "Encore, Classic, and Shared catalogs" = "c_users")
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
@@ -112,20 +112,18 @@ create_fy_qtr <- function(ymd_date, fy_year) {
 prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
   if (!missing(cat)){  
     if (cat == "not catalog" & !missing(users)) {
-      selected <- df %>% select(ends_with("users"), -contains("catalog"), date_dash)
+      selected <- df %>% select(ends_with("users"), -contains("catalog"), -contains("encore"), -contains("website"), date_dash)
       } else if (cat == "catalog" & !missing(users)) {
-        selected <- df %>% select(intersect(ends_with("users"), contains("catalog")), date_dash) 
-      } else if (cat == "catalog" & !missing(views)) {
-        selected <- df %>% select(intersect(contains("views"), contains("catalog")), date_dash) 
-      } else if (cat == "not catalog" & !missing(views)) {
-        selected <- df %>% select(contains("views"), -contains("catalog"), date_dash)
+        selected <- df %>% select(intersect(ends_with("users"), matches("catalog|encore")), date_dash) 
+      } else if (!missing(views)) {
+        selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
       } 
   }
   if (!missing(trans_name)) {
     selected <- df %>% select(starts_with(trans_name), -ends_with("users"), date_dash)
   }
   if (!missing(trans_sum)) {
-    selected <- df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary"), date_dash)
+    selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash)
   }
   
   if (missing(card)) {
@@ -158,26 +156,34 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
-# 
-# view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
+# # 
+# view_sum <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
 #   group_by(user_type, s_year) %>%
 #   summarise(tot = sum(count)) %>%
 #   ungroup() %>%
 #   mutate(user_type = var_to_label(user_type),
 #          user_lab = tool_label(user_type),
 #          hex = cat_color(user_lab))
-# 
-# u <- prep_data(df, key = "user_type", cat="catalog", users = TRUE)
-# 
-# monthly <- u %>%
+# # 
+# # u <- prep_data(df, key = "user_type", cat="catalog", users = TRUE)
+# # 
+# monthly <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
 #   group_by(user_type, s_month) %>%
 #   summarise(count = sum(count)) %>%
 #   ungroup() %>%
 #   mutate(user_type = var_to_label(user_type),
 #          user_lab = tool_label(user_type),
-#          hex = cat_color(user_type))
-# n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart")
-# tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+#          hex = cat_color(user_type),
+#          log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
+#   filter(!is.na(log_count))
+# n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart")
+# n_base$yAxis(tickValues = c(1,2,3,4,5,6)
+#              ,tickFormat = "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#")
+# # n_base$yAxis(tickFormat = "#!d3.format(',.0')!#")
+# 
+# tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+# n_base$chart(tooltipContent = tt)
+# n_base
 # n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
-# n$chart(color = unique(monthly$hex))
-# n
+# # n$chart(color = unique(monthly$hex))
+# # n

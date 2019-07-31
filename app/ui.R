@@ -24,10 +24,11 @@ ui <- dashboardPage(title="Digital dashboard",
                                     ),
                     dashboardSidebar(width = 250, sidebarMenu(id = "sidebar_menu",
                                                               menuItem("Overview", tabName = "overview", icon = icon("globe"))
-                                                              ,menuItem("Page Views", tabName = "views", icon = icon("eye"))
-                                                              ,menuItem("Users", tabName = "users", icon = icon("users"))
                                                               ,menuItem("New Cards", tabName = "cards", icon = icon("id-card"))
                                                               ,menuItem("Circulation Activity", tabName = "transactions", icon = icon("arrows-alt-h"))
+                                                              ,menuItem("Website", tabName = "web", icon = icon("newspaper"))
+                                                              ,menuItem("Users", tabName = "users", icon = icon("users"))
+                                                              ,menuItem("Page Views", tabName = "views", icon = icon("eye"))
                     )),
                     dashboardBody(
                       useShinyjs(),
@@ -82,8 +83,8 @@ ui <- dashboardPage(title="Digital dashboard",
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
-                                                        ,radioButtons(inputId = "views_vars", label = "Variable", choices = views_choices,
-                                                                      selected = "nc_users")
+                                                        # ,radioButtons(inputId = "views_vars", label = "Variable", choices = views_choices,
+                                                        #               selected = "c_users")
                                                         ,radioButtons(inputId = "Vtime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
                                   ) # views controls col

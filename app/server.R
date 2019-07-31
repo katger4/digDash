@@ -1,33 +1,36 @@
 server <- function(input, output, session) {
   
-  df <- df_ss %>% 
-    gs_read_csv(ws = 1) %>% 
-    drop_na() %>% 
-    filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
+  # df <- df_ss %>% 
+  #   gs_read_csv(ws = 1) %>% 
+  #   drop_na() %>% 
+  #   filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
+  
+  # saveRDS(df, './app/data/jun31.rds')
+  df<- readRDS('./data/jun31.rds')
   
   latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderText({paste("January 1, 2019 -", format(max(df$date_dash), "%B %d, %Y"))})
   
-  output$nc_views_tot <- renderUI({
-    HTML(paste("<b>",comma_format()(sum(df %>% select(contains("views"), -contains("catalog")))),"</b>page views"))
-  })
+  # output$web_tot <- renderUI({
+  #   HTML(paste("<b>",comma_format()(sum(df %>% select(contains("website"), -contains("catalog")))),"</b>page views"))
+  # })
   
   output$c_views_tot <- renderUI({
-    HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(contains("views"), contains("catalog"))))),"</b>catalog page views"))
+    HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(contains("views"), matches("catalog|encore"))))),"</b>catalog page views"))
   })
   
   output$circ_tot <- renderUI({
-    HTML(paste("<b>",comma_format()(sum(df %>% select(starts_with("sierra"), starts_with("overdrive"), starts_with("cloudlibrary")))),"</b>circulation activity*"))
+    HTML(paste("<b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*"))
   })
   
   output$nc_user_tot <- renderUI({
-    HTML(paste("<b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("catalog")))),"</b>unique users"))
+    HTML(paste("<b>",comma_format()(sum(df %>% select(ends_with("users")))),"</b>unique users"))
   })
   
   output$c_user_tot <- renderUI({
-    HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("catalog"))))),"</b>unique catalog users"))
+    HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(ends_with("users"), matches("catalog|encore"))))),"</b>unique catalog users"))
   })
   
   ### Vars ###
@@ -39,9 +42,10 @@ server <- function(input, output, session) {
     switch(input$users_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", users = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", users = TRUE))
   })
 
-  views_var <- reactive({
-    switch(input$views_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", views = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", views = TRUE))
-  })
+  views_var <- prep_data(df, "user_type", cat = "catalog", views = TRUE)
+  # reactive({
+  #   # switch(input$views_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", views = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", views = TRUE))
+  # })
   
   ### VALUE BOXES ###
   
@@ -357,17 +361,22 @@ server <- function(input, output, session) {
 
   output$views_plot <- renderChart({
     if (input$Vtime_var == "Monthly"){
-      monthly <- views_var() %>%
+      monthly <- views_var %>%
         group_by(user_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type))
+               hex = cat_color(user_type),
+               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
+        filter(!is.na(log_count))
 
-      n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "views_plot", tooltip = tt)
+      n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
+      # tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
+      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), yTicks, plotID = "views_plot", tooltip = tt)
       n$chart(color = unique(monthly$hex))
+      n$yAxis(tickValues = c(1,2,3,4,5,6))
       return(n)
 
     }
