@@ -6,7 +6,7 @@ server <- function(input, output, session) {
   #   filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
   
   # saveRDS(df, './app/jul.rds')
-  df <- readRDS('./jul.rds')
+  df <- readRDS('./data/jun31.rds')
   
   latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
@@ -20,15 +20,15 @@ server <- function(input, output, session) {
   # })
   
   output$c_views_tot <- renderUI({
-    HTML(paste("<span style='font-size:20px'><b>",comma_format()(sum(df %>% select(intersect(contains("views"), matches("catalog|encore"))))),"</b>page views</span>"))
+    HTML(paste("<span style='font-size:22px'><b>",comma_format()(sum(df %>% select(intersect(contains("views"), matches("catalog|encore"))))),"</b>page views</span>"))
   })
   
   output$circ_tot <- renderUI({
-    HTML(paste("<span style='font-size:20px'><b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*</span>"))
+    HTML(paste("<span style='font-size:22px'><b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*</span>"))
   })
   
   output$nc_user_tot <- renderUI({
-    HTML(paste("<span style='font-size:20px'><b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("website")))),"</b>unique users</span>"))
+    HTML(paste("<span style='font-size:22px'><b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("website")))),"</b>unique users</span>"))
   })
   
   # output$c_user_tot <- renderUI({
@@ -54,11 +54,17 @@ server <- function(input, output, session) {
   ### VALUE BOXES ###
   
   output$card_tot <- output$card_tot_tab <- renderValueBox({
-    text <- HTML(paste("New card sign ups",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    # ,br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"
+    text <- actionLink("link_to_cards", HTML("<span style='font-size:24px; color:white; '>New card sign ups</span>"))
     valueBox(
       comma_format()(sum(df %>% select(new_card_sign_ups))), text, icon = icon("id-card"),
       color = "blue"
     )
+  })
+  
+  observeEvent(input$link_to_cards, {
+    newtab <- switch(input$tabs, "overview" = "cards", "cards" = "overview")
+    updateTabItems(session, "tabs", newtab)
   })
 
   output$views_tot <- renderValueBox({
@@ -211,33 +217,39 @@ server <- function(input, output, session) {
   })
 
   ### PLOTS ###
-  output$views_plot_sum <- renderPlotly({
-    view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
-      group_by(user_type, s_year) %>%
-      summarise(tot = sum(count)) %>%
-      ungroup() %>%
-      mutate(user_type = var_to_label(user_type),
-             user_lab = tool_label(user_type),
-             hex = cat_color(user_lab))
-
-    p <- plot_ly(view_sum, x= ~user_lab, y = ~tot
-                 ,type = "bar"
-                 ,marker = list(color=view_sum$hex)
-                 ,text = comma_format()(view_sum$tot)
-                 ,textposition="outside"
-                 ,cliponaxis = FALSE
-                 ,hoverinfo = 'text'
-                 ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
-                 ) %>%
-      layout(showlegend = F
-             ,bargap = 0
-             ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
-             ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-             ,margin = list(b=10,l=10,r=10,t=20,pad=4)
-             )
-    ggplotly(p) %>%
-      config(displayModeBar = F)
-  })
+  # output$views_plot_sum <- renderPlotly({
+  #   view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
+  #     group_by(user_type, s_year) %>%
+  #     summarise(tot = sum(count)) %>%
+  #     ungroup() %>%
+  #     mutate(user_type = var_to_label(user_type),
+  #            user_lab = tool_label(user_type),
+  #            hex = cat_color(user_lab)) 
+  #   
+  #   view_sum$user_lab <- factor(view_sum$user_lab, levels = unique(view_sum$user_lab)[order(view_sum$tot, decreasing = TRUE)])
+  # 
+  #   p <- plot_ly(view_sum, x= ~user_lab, y = ~tot
+  #                ,type = "bar"
+  #                ,marker = list(color=view_sum$hex)
+  #                ,text = comma_format()(view_sum$tot)
+  #                ,textposition="outside"
+  #                ,cliponaxis = FALSE
+  #                ,hoverinfo = 'text'
+  #                ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
+  #                ) %>%
+  #     layout(showlegend = F
+  #            ,bargap = 0
+  #            ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE
+  #                          ,categoryorder = "array"
+  #                          ,categoryarray = ~c("Shared catalog","Classic catalog","Encore"))
+  #            ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE
+  #                          ,categoryorder = "array"
+  #                          ,categoryarray = ~c("Shared catalog","Classic catalog","Encore"))
+  #            ,margin = list(b=10,l=10,r=10,t=20,pad=4)
+  #            )
+  #   ggplotly(p) %>%
+  #     config(displayModeBar = F)
+  # })
 
   output$cat_views_plot_sum <- renderPlotly({
     view_sum <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
@@ -246,7 +258,10 @@ server <- function(input, output, session) {
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
              user_lab = tool_label(user_type),
-             hex = cat_color(user_lab))
+             hex = cat_color(user_lab)) 
+    
+    view_sum$user_lab <- factor(view_sum$user_lab, levels = unique(view_sum$user_lab)[order(view_sum$tot, decreasing = TRUE)])
+    
     p <- plot_ly(view_sum, x= ~tot, y = ~user_lab
                  ,type = "bar"
                  ,orientation = 'h'
@@ -261,7 +276,7 @@ server <- function(input, output, session) {
              ,bargap = 0
              ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
              ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
-             ,margin = list(b=10,l=10,r=60,t=10,pad=4)
+             ,margin = list(b=10,l=10,r=70,t=10,pad=4)
       )
     ggplotly(p) %>%
       config(displayModeBar = F)
@@ -327,38 +342,38 @@ server <- function(input, output, session) {
       layout(showlegend = F,
              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-             ,margin = list(b=30,l=10,r=10,t=40,pad=4))
+             ,margin = list(b=20,l=10,r=10,t=20,pad=4))
     ggplotly(p) %>%
       config(displayModeBar = F)
   })
 
-  output$cat_user_plot_sum <- renderPlotly({
-    user_sum <- prep_data(df, "user_type", cat = "catalog", users = TRUE) %>%
-      group_by(user_type, s_year) %>%
-      summarise(tot = sum(count)) %>%
-      ungroup() %>%
-      mutate(user_type = var_to_label(user_type),
-             user_lab = tool_label(user_type),
-             hex = cat_color(user_lab))
-    p <- plot_ly(user_sum, x= ~tot, y = ~user_lab
-                 ,type = "bar"
-                 ,orientation = 'h'
-                 ,marker = list(color=user_sum$hex)
-                 ,text = comma_format()(user_sum$tot)
-                 ,textposition="outside"
-                 ,cliponaxis = FALSE
-                 ,hoverinfo = 'text'
-                 ,hovertext = overview_tooltip(user_sum$user_lab,user_sum$tot,'page views')
-    ) %>%
-      layout(showlegend = F
-             ,bargap = 0
-             ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-             ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
-             ,margin = list(b=10,l=10,r=60,t=10,pad=4)
-      )
-    ggplotly(p) %>%
-      config(displayModeBar = F)
-  })
+  # output$cat_user_plot_sum <- renderPlotly({
+  #   user_sum <- prep_data(df, "user_type", cat = "catalog", users = TRUE) %>%
+  #     group_by(user_type, s_year) %>%
+  #     summarise(tot = sum(count)) %>%
+  #     ungroup() %>%
+  #     mutate(user_type = var_to_label(user_type),
+  #            user_lab = tool_label(user_type),
+  #            hex = cat_color(user_lab))
+  #   p <- plot_ly(user_sum, x= ~tot, y = ~user_lab
+  #                ,type = "bar"
+  #                ,orientation = 'h'
+  #                ,marker = list(color=user_sum$hex)
+  #                ,text = comma_format()(user_sum$tot)
+  #                ,textposition="outside"
+  #                ,cliponaxis = FALSE
+  #                ,hoverinfo = 'text'
+  #                ,hovertext = overview_tooltip(user_sum$user_lab,user_sum$tot,'page views')
+  #   ) %>%
+  #     layout(showlegend = F
+  #            ,bargap = 0
+  #            ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+  #            ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
+  #            ,margin = list(b=10,l=10,r=60,t=10,pad=4)
+  #     )
+  #   ggplotly(p) %>%
+  #     config(displayModeBar = F)
+  # })
 
   output$views_plot <- renderChart({
     if (input$Vtime_var == "Monthly"){
@@ -378,7 +393,7 @@ server <- function(input, output, session) {
       # tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
       # yTicks <- "#!d3.format(',.0')!#"
       yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), yTicks, plotID = "views_plot", tooltip = tt)
       n$chart(color = unique(monthly$hex))
       n$yAxis(tickValues = c(1,2,3,4,5,6))

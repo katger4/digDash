@@ -49,7 +49,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                     ,status = "primary"
                                                     ,align = "center"
                                        ))
-                                       ,fluidRow(column(width=3),column(width=6,valueBoxOutput("card_tot", width = NULL)),column(width=3))
+                                       ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
                                        ,fluidRow(column(width=2),column(width=4,valueBoxOutput("wViews_tot", width = NULL)),column(width=4,valueBoxOutput("wUsers_tot", width = NULL)),column(width=2))
                                        ,fluidRow(column(width = 4
                                                         # ,fluidRow(box(uiOutput("nc_views_tot")
