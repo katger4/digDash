@@ -1,12 +1,12 @@
 server <- function(input, output, session) {
   
-  # df <- df_ss %>% 
-  #   gs_read_csv(ws = 1) %>% 
-  #   drop_na() %>% 
+  # df <- df_ss %>%
+  #   gs_read_csv(ws = 1) %>%
+  #   drop_na() %>%
   #   filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
   
-  # saveRDS(df, './app/data/jun31.rds')
-  df<- readRDS('./data/jun31.rds')
+  # saveRDS(df, './app/jul.rds')
+  df <- readRDS('./jul.rds')
   
   latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
@@ -39,10 +39,12 @@ server <- function(input, output, session) {
   var <- reactive({
     switch(input$vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
   })
+  
+  user_var <- prep_data(df, "user_type", cat = "catalog", users = TRUE)
 
-  user_var <- reactive({
-    switch(input$users_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", users = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", users = TRUE))
-  })
+  # user_var <- reactive({
+  #   switch(input$users_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", users = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", users = TRUE))
+  # })
 
   views_var <- prep_data(df, "user_type", cat = "catalog", views = TRUE)
   # reactive({
@@ -94,12 +96,10 @@ server <- function(input, output, session) {
       )
   })
 
-
-
   output$users_tot <- renderValueBox({
     text <- HTML(paste("Unique users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
-      comma_format()(sum(user_var()$count)), text, icon = icon("users"),
+      comma_format()(sum(user_var$count)), text, icon = icon("users"),
       color = "blue"
     )
   })
@@ -109,7 +109,7 @@ server <- function(input, output, session) {
     if (input$users_vars == "nc_users"){
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
         color = "blue"
       )
     }
@@ -120,13 +120,13 @@ server <- function(input, output, session) {
     if (input$users_vars == "nc_users"){
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
         color = "blue"
       )
     } else {
       text <- HTML(paste(var_to_label(v_type), "catalog users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
         color = "blue"
       )
     }
@@ -138,13 +138,13 @@ server <- function(input, output, session) {
     if (input$users_vars == "nc_users"){
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
         color = "blue"
       )
     } else {
       text <- HTML(paste(var_to_label(v_type), "catalog users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
         color = "blue"
       )
     }
@@ -152,13 +152,13 @@ server <- function(input, output, session) {
 
   output$u4 <- renderValueBox({
     v_type <- switch(input$users_vars, "nc_users" = 'Website', "c_users" = '')
-    if (input$users_vars == "nc_users"){
+    # if (input$users_vars == "nc_users"){
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("newspaper"),
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("newspaper"),
         color = "blue"
       )
-    }
+    # }
   })
 
   output$tot <- renderValueBox({
@@ -368,15 +368,17 @@ server <- function(input, output, session) {
         ungroup() %>%
         mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
-        arrange(s_month, count) %>%
-        filter(!is.na(log_count))
+               log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
+        arrange(s_month, count) 
+      # %>%
+        # mutate(log_count = ifelse(is.na(log_count), 0, log_count))
+        # filter(!is.na(log_count))
 
       n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
       # tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
       # yTicks <- "#!d3.format(',.0')!#"
       yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), yTicks, plotID = "views_plot", tooltip = tt)
       n$chart(color = unique(monthly$hex))
       n$yAxis(tickValues = c(1,2,3,4,5,6))
@@ -412,7 +414,7 @@ server <- function(input, output, session) {
 
       n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
       yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + '</p>'} !#"
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' page views in ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), yTicks, plotID = "views_plot", tooltip = tt)
       n$chart(color = unique(quarterly$hex))
       n$yAxis(tickValues = c(1,2,3,4,5,6))
@@ -423,13 +425,14 @@ server <- function(input, output, session) {
 
   output$users_plot <- renderChart({
     if (input$Utime_var == "Monthly"){
-      monthly <- user_var() %>%
+      monthly <- user_var %>%
         group_by(user_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(user_type = var_to_label(user_type),
                user_lab = tool_label(user_type),
-               hex = cat_color(user_type))
+               hex = cat_color(user_type)) %>%
+        arrange(s_month, count)
 
       n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
@@ -439,7 +442,7 @@ server <- function(input, output, session) {
 
     }
     else if (input$Utime_var == "Daily") {
-      daily <- user_var() %>%
+      daily <- user_var %>%
         mutate(user_type = var_to_label(user_type),
                user_lab = tool_label(user_type),
                hex = cat_color(user_type))
@@ -452,13 +455,14 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Utime_var == "Quarterly") {
-      quarterly <- user_var() %>%
+      quarterly <- user_var %>%
         group_by(user_type, f_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(user_type = var_to_label(user_type),
                user_lab = tool_label(user_type),
-               hex = cat_color(user_type))
+               hex = cat_color(user_type)) %>%
+        arrange(f_quarter, count)
 
       n_base <- nPlot(count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + '</p>'} !#"
