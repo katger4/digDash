@@ -66,7 +66,9 @@ trans_shade <- function(var_name) {
                   grepl("cloud",var_name) & grepl("audio",var_name) & grepl("checkouts",var_name) ~ "#aad5ae",
                   grepl("cloud",var_name) & grepl("audio",var_name) & grepl("holds",var_name) ~ "#7bbe81",
                   grepl("cloud",var_name) & grepl("ebook",var_name) & grepl("checkouts",var_name) ~ "#488b4e",
-                  grepl("cloud",var_name) & grepl("ebook",var_name) & grepl("holds",var_name) ~ "#2e5932")
+                  grepl("cloud",var_name) & grepl("ebook",var_name) & grepl("holds",var_name) ~ "#2e5932",
+                  grepl("website",var_name) & grepl("views",var_name) ~ "#49a19a",
+                  grepl("website",var_name) & grepl("users",var_name) ~ "#9acbc7")
   return(col)
 }
 
@@ -110,7 +112,7 @@ create_fy_qtr <- function(ymd_date, fy_year) {
   paste0(fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
 }
 
-prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
+prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card, web) {
   if (!missing(cat)){  
     if (!missing(users)) {
       selected <- df %>% select(ends_with("users"), -contains("website"), date_dash)
@@ -129,13 +131,17 @@ prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card) {
     selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash)
   }
   
-  if (missing(card)) {
-    gathered <- selected %>% gather_(key = key, value = "count", setdiff(names(.), 'date_dash'))
+  if (!missing(web)) {
+    selected <- df %>% select(contains("website"), date_dash)
   }
-  else {
+  
+  if (!missing(card)) {
     gathered <- df %>% 
       select(new_card_sign_ups, date_dash) %>%
       rename(count = new_card_sign_ups)
+  } 
+  else {
+    gathered <- selected %>% gather_(key = key, value = "count", setdiff(names(.), 'date_dash'))
   }
 
   gathered %>%

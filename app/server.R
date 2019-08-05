@@ -20,15 +20,27 @@ server <- function(input, output, session) {
   # })
   
   output$c_views_tot <- renderUI({
-    HTML(paste("<span style='font-size:22px'><b>",comma_format()(sum(df %>% select(intersect(contains("views"), matches("catalog|encore"))))),"</b>page views</span>"))
+    actionLink("link_to_views", HTML(paste("<span style='font-size:24px'><b>",comma_format()(sum(df %>% select(intersect(contains("views"), matches("catalog|encore"))))),"</b>page views</span>")))
+  })
+  
+  observeEvent(input$link_to_views, {
+    updateTabItems(session, "sidebar_menu", "views")
   })
   
   output$circ_tot <- renderUI({
-    HTML(paste("<span style='font-size:22px'><b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*</span>"))
+    actionLink("link_to_circ", HTML(paste("<span style='font-size:26px'><b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*</span>")))
+  })
+  
+  observeEvent(input$link_to_circ, {
+    updateTabItems(session, "sidebar_menu", "transactions")
   })
   
   output$nc_user_tot <- renderUI({
-    HTML(paste("<span style='font-size:22px'><b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("website")))),"</b>unique users</span>"))
+    actionLink("link_to_users", HTML(paste("<span style='font-size:24px'><b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("website")))),"</b>unique users</span>")))
+  })
+  
+  observeEvent(input$link_to_users, {
+    updateTabItems(session, "sidebar_menu", "users")
   })
   
   # output$c_user_tot <- renderUI({
@@ -51,11 +63,18 @@ server <- function(input, output, session) {
   #   # switch(input$views_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", views = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", views = TRUE))
   # })
   
+  web_var <- prep_data(df, "user_type", web = TRUE)
+  
   ### VALUE BOXES ###
   
   output$card_tot <- output$card_tot_tab <- renderValueBox({
-    # ,br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"
-    text <- actionLink("link_to_cards", HTML("<span style='font-size:24px; color:white; '>New card sign ups</span>"))
+    if (input$sidebar_menu == "overview") {
+      text <- actionLink("link_to_cards", HTML("<span style='font-size:30px; color:#dbdbdb;'>New card sign ups</span>"))
+    }
+    else {
+      text <- HTML(paste("New card sign ups",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    }
+
     valueBox(
       comma_format()(sum(df %>% select(new_card_sign_ups))), text, icon = icon("id-card"),
       color = "blue"
@@ -63,8 +82,43 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$link_to_cards, {
-    newtab <- switch(input$tabs, "overview" = "cards", "cards" = "overview")
-    updateTabItems(session, "tabs", newtab)
+    updateTabItems(session, "sidebar_menu", "cards")
+  })
+  
+  output$Vweb_box <- output$Vweb_box_tab <- renderValueBox({
+    if (input$sidebar_menu == "overview") {
+      text <- actionLink("link_to_Vweb", HTML("<span style='font-size:22px; color:#dbdbdb;'>Website page views</span>"))
+    }
+    else {
+      text <- HTML(paste("Website page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    }
+    
+    valueBox(
+      comma_format()(sum(df %>% select(intersect(ends_with("views"), contains("website"))))), text, icon = icon("eye"),
+      color = "black"
+    )
+  })
+  
+  observeEvent(input$link_to_Vweb, {
+    updateTabItems(session, "sidebar_menu", "web")
+  })
+  
+  output$Uweb_box <- output$Uweb_box_tab <- renderValueBox({
+    if (input$sidebar_menu == "overview") {
+      text <- actionLink("link_to_Uweb", HTML("<span style='font-size:22px; color:#dbdbdb;'>Website users</span>"))
+    }
+    else {
+      text <- HTML(paste("Website users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    }
+    
+    valueBox(
+      comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("website"))))), text, icon = icon("users"),
+      color = "black"
+    )
+  })
+  
+  observeEvent(input$link_to_Uweb, {
+    updateTabItems(session, "sidebar_menu", "web")
   })
 
   output$views_tot <- renderValueBox({
@@ -111,60 +165,49 @@ server <- function(input, output, session) {
   })
 
   output$u1 <- renderValueBox({
-    v_type <- switch(input$users_vars, "nc_users" = 'CloudLibrary', "c_users" = '')
-    if (input$users_vars == "nc_users"){
+    v_type <- 'Shared catalog'
+      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      valueBox(
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
+        color = "blue"
+      )
+  })
+
+  output$u2 <- renderValueBox({
+    v_type <- 'Classic catalog'
+      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      valueBox(
+        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
+        color = "blue"
+      )
+  })
+
+  output$u3 <- renderValueBox({
+    v_type <- 'CloudLibrary'
+
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
         color = "blue"
       )
-    }
   })
 
-  output$u2 <- renderValueBox({
-    v_type <- switch(input$users_vars, "nc_users" = 'Overdrive', "c_users" = 'Classic')
-    if (input$users_vars == "nc_users"){
+  output$u4 <- renderValueBox({
+    v_type <- 'Overdrive'
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
         color = "blue"
       )
-    } else {
-      text <- HTML(paste(var_to_label(v_type), "catalog users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-      valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
-        color = "blue"
-      )
-    }
   })
-
-  output$u3 <- renderValueBox({
-    v_type <- switch(input$users_vars, "nc_users" = 'Encore', "c_users" = 'Shared')
-
-    if (input$users_vars == "nc_users"){
-      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-      valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
-        color = "blue"
-      )
-    } else {
-      text <- HTML(paste(var_to_label(v_type), "catalog users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-      valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
-        color = "blue"
-      )
-    }
-  })
-
-  output$u4 <- renderValueBox({
-    v_type <- switch(input$users_vars, "nc_users" = 'Website', "c_users" = '')
-    # if (input$users_vars == "nc_users"){
-      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-      valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("newspaper"),
-        color = "blue"
-      )
-    # }
+  
+  output$u5 <- renderValueBox({
+    v_type <- 'Encore'
+    text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    valueBox(
+      comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
+      color = "blue"
+    )
   })
 
   output$tot <- renderValueBox({
@@ -266,8 +309,8 @@ server <- function(input, output, session) {
                  ,type = "bar"
                  ,orientation = 'h'
                  ,marker = list(color=view_sum$hex)
-                 ,text = comma_format()(view_sum$tot)
-                 ,textposition="outside"
+                 # ,text = comma_format()(view_sum$tot)
+                 # ,textposition="outside"
                  ,cliponaxis = FALSE
                  ,hoverinfo = 'text'
                  ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
@@ -276,7 +319,7 @@ server <- function(input, output, session) {
              ,bargap = 0
              ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
              ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
-             ,margin = list(b=10,l=10,r=70,t=10,pad=4)
+             ,margin = list(b=10,l=10,r=10,t=10,pad=4)
       )
     ggplotly(p) %>%
       config(displayModeBar = F)
@@ -295,7 +338,7 @@ server <- function(input, output, session) {
       # Make the bubbles
       geom_polygon(aes(x, y, group = id, fill=as.factor(id)), alpha = 1, show.legend = FALSE) +
       scale_fill_manual(values = cat_color(cap_bub$grouper)) +
-      geom_text(data = cap_bub, aes(x, y, size = tot, label = paste(grouper,comma(tot),sep='\n'))) +
+      geom_text(data = cap_bub, aes(x, y, size = tot, label = grouper)) +
       theme_void() +
       theme(legend.position="none") +
       coord_equal()
@@ -342,7 +385,7 @@ server <- function(input, output, session) {
       layout(showlegend = F,
              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-             ,margin = list(b=20,l=10,r=10,t=20,pad=4))
+             ,margin = list(b=20,l=10,r=50,t=20,pad=4))
     ggplotly(p) %>%
       config(displayModeBar = F)
   })
@@ -530,6 +573,52 @@ server <- function(input, output, session) {
       return(n)
     }
 
+  })
+  
+  output$web_plot <- renderChart({
+    
+    if (input$Wtime_var == "Monthly"){
+      monthly <- web_var %>%
+        group_by(user_type, s_month) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
+               hex = trans_shade(user_type)) %>%
+        arrange(s_month, count)
+      n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
+      n$chart(color = unique(monthly$hex))
+      return(n)
+    }
+    else if (input$Wtime_var == "Daily") {
+      daily <- web_var %>%
+        mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
+               hex = trans_shade(user_type))
+      
+      n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Wplot_for_size_width"]])
+      xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
+      tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"web_plot", tt)
+      n$chart(color = unique(daily$hex))
+      return(n)
+    }
+    else if (input$Wtime_var == "Quarterly") {
+      quarterly <- web_var %>%
+        group_by(user_type, f_quarter) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
+               hex = trans_shade(user_type)) %>%
+        arrange(f_quarter, count)
+      
+      n_base <- nPlot(count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
+      n$chart(color = unique(quarterly$hex))
+      return(n)
+    }
+    
   })
 
   output$trans_plot <- renderChart({
