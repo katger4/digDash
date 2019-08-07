@@ -1,5 +1,5 @@
 server <- function(input, output, session) {
-  
+
   # df <- df_ss %>%
   #   gs_read_csv(ws = 1) %>%
   #   drop_na() %>%
@@ -390,34 +390,6 @@ server <- function(input, output, session) {
       config(displayModeBar = F)
   })
 
-  # output$cat_user_plot_sum <- renderPlotly({
-  #   user_sum <- prep_data(df, "user_type", cat = "catalog", users = TRUE) %>%
-  #     group_by(user_type, s_year) %>%
-  #     summarise(tot = sum(count)) %>%
-  #     ungroup() %>%
-  #     mutate(user_type = var_to_label(user_type),
-  #            user_lab = tool_label(user_type),
-  #            hex = cat_color(user_lab))
-  #   p <- plot_ly(user_sum, x= ~tot, y = ~user_lab
-  #                ,type = "bar"
-  #                ,orientation = 'h'
-  #                ,marker = list(color=user_sum$hex)
-  #                ,text = comma_format()(user_sum$tot)
-  #                ,textposition="outside"
-  #                ,cliponaxis = FALSE
-  #                ,hoverinfo = 'text'
-  #                ,hovertext = overview_tooltip(user_sum$user_lab,user_sum$tot,'page views')
-  #   ) %>%
-  #     layout(showlegend = F
-  #            ,bargap = 0
-  #            ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-  #            ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
-  #            ,margin = list(b=10,l=10,r=60,t=10,pad=4)
-  #     )
-  #   ggplotly(p) %>%
-  #     config(displayModeBar = F)
-  # })
-
   output$views_plot <- renderChart({
     if (input$Vtime_var == "Monthly"){
       monthly <- views_var %>%
@@ -437,7 +409,7 @@ server <- function(input, output, session) {
       # yTicks <- "#!d3.format(',.0')!#"
       yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), yTicks, plotID = "views_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), yTicks, plotID = "views_plot", tooltip = tt)
       n$chart(color = unique(monthly$hex))
       n$yAxis(tickValues = c(1,2,3,4,5,6))
       return(n)
@@ -494,7 +466,7 @@ server <- function(input, output, session) {
 
       n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
       n$chart(color = unique(monthly$hex))
       return(n)
 
@@ -508,7 +480,7 @@ server <- function(input, output, session) {
       n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"users_plot", tt)
+      n <- format_nPlot(n_base, list(left = 70, right = 100), "#!d3.format(',.0')!#", xFormat,"users_plot", tt)
       n$chart(color = unique(daily$hex))
       return(n)
     }
@@ -524,7 +496,7 @@ server <- function(input, output, session) {
 
       n_base <- nPlot(count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
       n$chart(color = unique(quarterly$hex))
       return(n)
     }
@@ -539,7 +511,7 @@ server <- function(input, output, session) {
         summarise(count = sum(count))
       n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>New card sign ups</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#",plotID = "card_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#",plotID = "card_plot", tooltip = tt)
       n$chart(showControls = FALSE)
       n$chart(showLegend = FALSE)
       n$chart(color = "#! function(d){ return '#4272B8'} !#")
@@ -553,7 +525,7 @@ server <- function(input, output, session) {
       # n_base <- nPlot(count ~ date_dash, data = daily, type = "lineChart")
       # xFormat <- "#!function(d) {return d3.time.format.utc.utc('%Y-%m-%d')(new Date(d * 86400000));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>New card sign ups</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat, plotID = "card_plot", tt)
+      n <- format_nPlot(n_base, list(left = 70, right = 100), "#!d3.format(',.0')!#", xFormat, plotID = "card_plot", tt)
       # n$chart(showControls = FALSE)
       n$chart(showLegend = FALSE)
       n$chart(color = "#! function(d){ return '#4272B8'} !#")
@@ -566,7 +538,7 @@ server <- function(input, output, session) {
 
       n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>New card sign ups</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "card_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "card_plot", tooltip = tt)
       n$chart(showControls = FALSE)
       n$chart(showLegend = FALSE)
       n$chart(color = "#! function(d){ return '#4272B8'} !#")
@@ -587,8 +559,9 @@ server <- function(input, output, session) {
         arrange(s_month, count)
       n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
       n$chart(color = unique(monthly$hex))
+      # n$setTemplate(script = sprintf())
       return(n)
     }
     else if (input$Wtime_var == "Daily") {
@@ -599,7 +572,7 @@ server <- function(input, output, session) {
       n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Wplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"web_plot", tt)
+      n <- format_nPlot(n_base, list(left = 70, right = 100), "#!d3.format(',.0')!#", xFormat,"web_plot", tt)
       n$chart(color = unique(daily$hex))
       return(n)
     }
@@ -614,7 +587,7 @@ server <- function(input, output, session) {
       
       n_base <- nPlot(count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
       n$chart(color = unique(quarterly$hex))
       return(n)
     }

@@ -9,14 +9,6 @@ logo_blue_gradient <- shinyDashboardLogoDIY(
   ,badgeBackColor = "#bcbddc"
   ,badgeBorderRadius = 3)
 
-# plot_box <- (
-#   boxBackColor = "rgb(245,245,245)"
-#  ,boxBorderRadius = 0
-#  ,boxShadowSize = "0px 0px 0px"
-#  ,boxShadowColor = ""
-#  ,boxTitleSize = 19
-#  ,boxDefaultColor = "rgb(52,152,219)")
-
 ui <- dashboardPage(title="Digital dashboard",
                     dashboardHeader(title = logo_blue_gradient
                                     ,titleWidth = 250
@@ -32,7 +24,8 @@ ui <- dashboardPage(title="Digital dashboard",
                     )),
                     dashboardBody(
                       useShinyjs(),
-                      # hide errors
+
+                      # custom css
                       tags$style(type="text/css",
                                  ".shiny-output-error { visibility: hidden; }",
                                  ".shiny-output-error:before { visibility: hidden; }",
@@ -87,7 +80,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                 ,column(width = 2))
                                 ,fluidRow(
                                   column(width = 9
-                                         ,fluidRow(box(width = 12, chartOutput(outputId = "views_plot", "nvd3"),plotOutput("Vplot_for_size")))
+                                         ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "views_plot", "nvd3"),plotOutput("Vplot_for_size", height = "1px")))
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
@@ -110,7 +103,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                 # ,valueBoxOutput("u4",width = 3)
                                 ,fluidRow(
                                   column(width = 9
-                                         ,fluidRow(box(width = 12, chartOutput(outputId = "users_plot", "nvd3"),plotOutput("Uplot_for_size")))
+                                         ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "users_plot", "nvd3"),plotOutput("Uplot_for_size", height = "1px")))
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
@@ -125,7 +118,7 @@ ui <- dashboardPage(title="Digital dashboard",
                               ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot_tab", width = NULL)),column(width=4))
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("Cplot_for_size")))
+                                       ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("Cplot_for_size", height = "1px")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
@@ -137,7 +130,7 @@ ui <- dashboardPage(title="Digital dashboard",
                               ,fluidRow(column(width=2),column(width=4,valueBoxOutput("Vweb_box_tab", width = NULL)),column(width=4,valueBoxOutput("Uweb_box_tab", width = NULL)),column(width=2))
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(box(width = 12, chartOutput(outputId = "web_plot", "nvd3"),plotOutput("Wplot_for_size")))
+                                       ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "web_plot", "nvd3"),plotOutput("Wplot_for_size", height = "1px")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
@@ -154,8 +147,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                         ,valueBoxOutput("t4",width = 3))
                               ,fluidRow(
                                 column(width = 9
-                                       ,fluidRow(div(class="box", style = "overflow-y: auto; height: 400px"
-                                                     ,chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size")))
+                                       ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size", height = "1px")))
                                 )
                                 ,column(width = 3
                                         ,fluidRow(box(width=NULL
