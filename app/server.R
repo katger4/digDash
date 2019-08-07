@@ -260,39 +260,6 @@ server <- function(input, output, session) {
   })
 
   ### PLOTS ###
-  # output$views_plot_sum <- renderPlotly({
-  #   view_sum <- prep_data(df, key = "user_type", cat = "not catalog", views = TRUE) %>%
-  #     group_by(user_type, s_year) %>%
-  #     summarise(tot = sum(count)) %>%
-  #     ungroup() %>%
-  #     mutate(user_type = var_to_label(user_type),
-  #            user_lab = tool_label(user_type),
-  #            hex = cat_color(user_lab)) 
-  #   
-  #   view_sum$user_lab <- factor(view_sum$user_lab, levels = unique(view_sum$user_lab)[order(view_sum$tot, decreasing = TRUE)])
-  # 
-  #   p <- plot_ly(view_sum, x= ~user_lab, y = ~tot
-  #                ,type = "bar"
-  #                ,marker = list(color=view_sum$hex)
-  #                ,text = comma_format()(view_sum$tot)
-  #                ,textposition="outside"
-  #                ,cliponaxis = FALSE
-  #                ,hoverinfo = 'text'
-  #                ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
-  #                ) %>%
-  #     layout(showlegend = F
-  #            ,bargap = 0
-  #            ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE
-  #                          ,categoryorder = "array"
-  #                          ,categoryarray = ~c("Shared catalog","Classic catalog","Encore"))
-  #            ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE
-  #                          ,categoryorder = "array"
-  #                          ,categoryarray = ~c("Shared catalog","Classic catalog","Encore"))
-  #            ,margin = list(b=10,l=10,r=10,t=20,pad=4)
-  #            )
-  #   ggplotly(p) %>%
-  #     config(displayModeBar = F)
-  # })
 
   output$cat_views_plot_sum <- renderPlotly({
     view_sum <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
@@ -304,7 +271,7 @@ server <- function(input, output, session) {
              hex = cat_color(user_lab)) 
     
     view_sum$user_lab <- factor(view_sum$user_lab, levels = unique(view_sum$user_lab)[order(view_sum$tot, decreasing = TRUE)])
-    
+
     p <- plot_ly(view_sum, x= ~tot, y = ~user_lab
                  ,type = "bar"
                  ,orientation = 'h'
@@ -319,11 +286,32 @@ server <- function(input, output, session) {
              ,bargap = 0
              ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
              ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
+             ,dragmode =  "zoom"
              ,margin = list(b=10,l=10,r=10,t=10,pad=4)
       )
     ggplotly(p) %>%
       config(displayModeBar = F)
+    
+    # p <- plot_ly(view_sum, labels = ~user_lab, values = ~tot
+    #              ,marker = list(colors=view_sum$hex)
+    #              ,textposition="outside"
+    #              ,hoverinfo = 'text'
+    #              ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'users')
+    #              ,text = view_sum$user_lab
+    #              ,textinfo = "text"
+    #              ,rotation = -100
+    #              # ,text = comma_format()(user_sum$tot)
+    # ) %>%
+    #   add_pie(hole = 0.6) %>%
+    #   layout(showlegend = F,
+    #          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+    #          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+    #          ,margin = list(b=20,l=10,r=50,t=20,pad=4))
+    # ggplotly(p) %>%
+    #   config(displayModeBar = F)
   })
+  
+  
 
   output$trans_plot_sum <- renderPlotly({
     trans <- prep_data(df, key = "transaction_type", trans_sum = TRUE) %>%
@@ -346,7 +334,8 @@ server <- function(input, output, session) {
     gp <- ggplotly(p) %>%
       config(displayModeBar = F) %>%
       layout(xaxis = list(showgrid = F),
-             yaxis = list(showgrid = F))
+             yaxis = list(showgrid = F)
+             ,dragmode =  "zoom")
 
     # specify hoverinfo manually on circle
     for(i in 1:3){
@@ -385,6 +374,7 @@ server <- function(input, output, session) {
       layout(showlegend = F,
              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
+             ,dragmode =  "zoom"
              ,margin = list(b=20,l=10,r=50,t=20,pad=4))
     ggplotly(p) %>%
       config(displayModeBar = F)
@@ -399,19 +389,14 @@ server <- function(input, output, session) {
         mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type),
                log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
-        arrange(s_month, count) 
-      # %>%
-        # mutate(log_count = ifelse(is.na(log_count), 0, log_count))
-        # filter(!is.na(log_count))
+        arrange(s_month, count)
 
       n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
-      # tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
-      # yTicks <- "#!d3.format(',.0')!#"
       yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 70), yTicks, plotID = "views_plot", tooltip = tt)
-      n$chart(color = unique(monthly$hex))
-      n$yAxis(tickValues = c(1,2,3,4,5,6))
+      n$chart(color = unique(monthly$hex), showControls = FALSE)
+      # n$yAxis(tickValues = c(1,2,3,4,5,6,7,8))
       return(n)
 
     }
@@ -445,9 +430,9 @@ server <- function(input, output, session) {
       n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
       yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' page views in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 100), yTicks, plotID = "views_plot", tooltip = tt)
-      n$chart(color = unique(quarterly$hex))
-      n$yAxis(tickValues = c(1,2,3,4,5,6))
+      n <- format_nPlot(n_base, list(left = 80), yTicks, plotID = "views_plot", tooltip = tt)
+      n$chart(color = unique(quarterly$hex), showControls = FALSE)
+      # n$yAxis(tickValues = c(1,2,3,4,5,6,7,8,9))
       return(n)
     }
 
@@ -459,29 +444,34 @@ server <- function(input, output, session) {
         group_by(user_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
-        mutate(user_type = var_to_label(user_type),
-               user_lab = tool_label(user_type),
-               hex = cat_color(user_type)) %>%
+        mutate(user_lab = tool_label(var_to_label(user_type)),
+               hex = cat_color(user_type),
+               log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
         arrange(s_month, count)
-
-      n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
-      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
-      n$chart(color = unique(monthly$hex))
+      
+      n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      n <- format_nPlot(n_base, list(left = 70), yTicks, plotID = "users_plot", tooltip = tt)
+      n$chart(color = unique(monthly$hex), showControls = FALSE)
+      n$yAxis(tickValues = c(1,2,3,4,5))
       return(n)
 
     }
     else if (input$Utime_var == "Daily") {
       daily <- user_var %>%
-        mutate(user_type = var_to_label(user_type),
-               user_lab = tool_label(user_type),
-               hex = cat_color(user_type))
+        mutate(user_lab = tool_label(var_to_label(user_type)),
+               hex = cat_color(user_type),
+               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
+        filter(!is.na(log_count))
 
-      n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      n_base <- nPlot(log_count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 70, right = 100), "#!d3.format(',.0')!#", xFormat,"users_plot", tt)
+      n <- format_nPlot(n_base, list(left = 70, right = 70), yTicks, xFormat,"users_plot", tt)
       n$chart(color = unique(daily$hex))
+      n$yAxis(tickValues = c(1,2,3,4))
       return(n)
     }
     else if (input$Utime_var == "Quarterly") {
@@ -489,15 +479,17 @@ server <- function(input, output, session) {
         group_by(user_type, f_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
-        mutate(user_type = var_to_label(user_type),
-               user_lab = tool_label(user_type),
-               hex = cat_color(user_type)) %>%
+        mutate(user_lab = tool_label(var_to_label(user_type)),
+               hex = cat_color(user_type),
+               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
+        filter(!is.na(log_count)) %>%
         arrange(f_quarter, count)
-
-      n_base <- nPlot(count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
-      n$chart(color = unique(quarterly$hex))
+      
+      n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
+      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + '</p>'} !#"
+      n <- format_nPlot(n_base, list(left = 80), yTicks, plotID = "users_plot", tooltip = tt)
+      n$chart(color = unique(quarterly$hex), showControls = FALSE)
       return(n)
     }
 
