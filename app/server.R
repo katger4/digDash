@@ -43,10 +43,6 @@ server <- function(input, output, session) {
     updateTabItems(session, "sidebar_menu", "users")
   })
   
-  # output$c_user_tot <- renderUI({
-  #   HTML(paste("<b>",comma_format()(sum(df %>% select(intersect(ends_with("users"), matches("catalog|encore"))))),"</b>unique catalog users"))
-  # })
-  
   ### Vars ###
   var <- reactive({
     switch(input$vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
@@ -63,7 +59,12 @@ server <- function(input, output, session) {
   #   # switch(input$views_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", views = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", views = TRUE))
   # })
   
-  web_var <- prep_data(df, "user_type", web = TRUE)
+  web_var <- reactive({
+    prep_data(df, key = "user_type", web = TRUE) %>% 
+      filter(user_type %in% input$web_opts)
+  })
+  
+  num_vars <- reactive({length(input$web_opts)})
   
   ### VALUE BOXES ###
   
@@ -87,7 +88,7 @@ server <- function(input, output, session) {
   
   output$Vweb_box <- output$Vweb_box_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_Vweb", HTML("<span style='font-size:22px; color:#dbdbdb;'>Website page views</span>"))
+      text <- actionLink("link_to_Vweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>Website page views</span>"))
     }
     else {
       text <- HTML(paste("Website page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
@@ -105,7 +106,7 @@ server <- function(input, output, session) {
   
   output$Uweb_box <- output$Uweb_box_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_Uweb", HTML("<span style='font-size:22px; color:#dbdbdb;'>Website users</span>"))
+      text <- actionLink("link_to_Uweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>Website users</span>"))
     }
     else {
       text <- HTML(paste("Website users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
@@ -291,27 +292,7 @@ server <- function(input, output, session) {
       )
     ggplotly(p) %>%
       config(displayModeBar = F)
-    
-    # p <- plot_ly(view_sum, labels = ~user_lab, values = ~tot
-    #              ,marker = list(colors=view_sum$hex)
-    #              ,textposition="outside"
-    #              ,hoverinfo = 'text'
-    #              ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'users')
-    #              ,text = view_sum$user_lab
-    #              ,textinfo = "text"
-    #              ,rotation = -100
-    #              # ,text = comma_format()(user_sum$tot)
-    # ) %>%
-    #   add_pie(hole = 0.6) %>%
-    #   layout(showlegend = F,
-    #          xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-    #          yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-    #          ,margin = list(b=20,l=10,r=50,t=20,pad=4))
-    # ggplotly(p) %>%
-    #   config(displayModeBar = F)
   })
-  
-  
 
   output$trans_plot_sum <- renderPlotly({
     trans <- prep_data(df, key = "transaction_type", trans_sum = TRUE) %>%
@@ -540,36 +521,48 @@ server <- function(input, output, session) {
   })
   
   output$web_plot <- renderChart({
-    
     if (input$Wtime_var == "Monthly"){
-      monthly <- web_var %>%
+      monthly <- web_var() %>%
         group_by(user_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
                hex = trans_shade(user_type)) %>%
-        arrange(s_month, count)
-      n_base <- nPlot(count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+        arrange(s_month, count) 
+      
+      if (!num_vars() == 1) {
+        n_base <- nPlot(count ~ s_month, data = monthly, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+        n_base$chart(color = unique(monthly$hex))
+      }
+      else {
+        n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+        n_base$chart(showLegend = FALSE)
+        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"))
+      }
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
-      n$chart(color = unique(monthly$hex))
-      # n$setTemplate(script = sprintf())
       return(n)
     }
     else if (input$Wtime_var == "Daily") {
-      daily <- web_var %>%
+      daily <- web_var() %>%
         mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
                hex = trans_shade(user_type))
-      
+
       n_base <- nPlot(count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Wplot_for_size_width"]])
+      if (!num_vars() == 1) {
+        n_base$chart(color = unique(daily$hex))
+      }
+      else {
+        n_base$chart(showLegend = FALSE)
+        n_base$chart(color = paste("#! function(d){ return '",unique(daily$hex),"'} !#"))
+      }
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 70, right = 100), "#!d3.format(',.0')!#", xFormat,"web_plot", tt)
-      n$chart(color = unique(daily$hex))
       return(n)
     }
     else if (input$Wtime_var == "Quarterly") {
-      quarterly <- web_var %>%
+      quarterly <- web_var() %>%
         group_by(user_type, f_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
@@ -577,10 +570,18 @@ server <- function(input, output, session) {
                hex = trans_shade(user_type)) %>%
         arrange(f_quarter, count)
       
-      n_base <- nPlot(count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+      if (!num_vars() == 1) {
+        n_base <- nPlot(count ~ f_quarter, data = quarterly, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+        n_base$chart(color = unique(quarterly$hex))
+      }
+      else {
+        n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
+        n_base$chart(showLegend = FALSE)
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"))
+      }
+
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
-      n$chart(color = unique(quarterly$hex))
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
       return(n)
     }
     

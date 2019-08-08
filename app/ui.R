@@ -131,6 +131,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
+                                                        ,checkboxGroupInput("web_opts", "Variable", choices = web_choices, selected = web_choices)
                                                         ,radioButtons(inputId = "Wtime_var", label = "Time", choices = time_choices, selected = "Monthly")))
                                   ) # control col
                                 ) # row

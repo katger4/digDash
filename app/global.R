@@ -20,8 +20,9 @@ var_choices <- c("Sierra circulation"="sierra_trans",
                  "Overdrive circulation" = "overdrive_trans",
                  "CloudLibrary circulation" = "cloud_trans")
 
-# views_choices <- c("Encore and Website" = "nc_users",
-#                  "Encore, Classic, and Shared catalogs" = "c_users")
+web_choices <- c("Users" = "website_visits_users", "Page views" = "website_visits_page_views")
+
+views_choices <- c("Shared catalog" = "s_cat","Classic catalog" = "c_cat","Encore" = "enc")
 
 # user_choices <- c("CloudLibrary and Overdrive" = "nc_users",
 #                   "Encore, Classic, and Shared catalogs" = "c_users")
@@ -112,14 +113,11 @@ create_fy_qtr <- function(ymd_date, fy_year) {
   paste0(fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
 }
 
-prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card, web) {
+prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card, web, choices) {
   if (!missing(cat)){  
     if (!missing(users)) {
       selected <- df %>% select(ends_with("users"), -contains("website"), date_dash)
       } 
-    # else if (cat == "catalog" & !missing(users)) {
-    #     selected <- df %>% select(intersect(ends_with("users"), matches("catalog|encore")), date_dash) 
-    #   } 
     else if (!missing(views)) {
         selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
       } 
