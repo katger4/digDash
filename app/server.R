@@ -254,103 +254,31 @@ server <- function(input, output, session) {
 
   ### PLOTS ###
 
-  output$cat_views_plot_sum <- renderPlotly({
-    view_sum <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
-      group_by(user_type, s_year) %>%
-      summarise(tot = sum(count)) %>%
-      ungroup() %>%
-      mutate(user_type = var_to_label(user_type),
-             user_lab = tool_label(user_type),
-             hex = cat_color(user_lab))
-
-    view_sum$user_lab <- factor(view_sum$user_lab, levels = unique(view_sum$user_lab)[order(view_sum$tot, decreasing = TRUE)])
-
-    p <- plot_ly(view_sum, x= ~tot, y = ~user_lab
-                 ,type = "bar"
-                 ,orientation = 'h'
-                 ,marker = list(color=view_sum$hex)
-                 ,text = ifelse(view_sum$tot < 1000000,unit_format(unit = "k", scale = 1e-3, sep = "")(view_sum$tot), unit_format(unit = "M", scale = 1e-6, sep = "")(view_sum$tot))
-                 ,textposition="outside"
-                 ,cliponaxis = FALSE
-                 ,hoverinfo = 'text'
-                 ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
-    ) %>%
-      layout(showlegend = F
-             ,bargap = 0
-             ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-             ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
-             ,dragmode =  "zoom"
-             ,margin = list(b=10,l=10,r=70,t=10,pad=4)
-      )
-    ggplotly(p) %>%
-      config(displayModeBar = F)
-    
-  })
-
   output$trans_plot_sum <- renderPlotly({
     trans <- prep_data(df, key = "transaction_type", trans_sum = TRUE) %>%
-      mutate(grouper = tool_label(transaction_type)) %>%
-      group_by(grouper) %>%
-      summarise(tot = sum(count))
+      mutate(transaction_group = tool_label(transaction_type),
+             hex = cat_color(transaction_group)) %>%
+      group_by(transaction_group, hex) %>%
+      summarise(tot = sum(count)) 
 
-    packing <- circleProgressiveLayout(trans$tot, sizetype='area')
-    cap_bub <- bind_cols(trans, packing) %>% rowid_to_column("id")
-    dat.gg <- circleLayoutVertices(packing, npoints = 100)
-    p <- ggplot(data = dat.gg) +
-      # Make the bubbles
-      geom_polygon(aes(x, y, group = id, fill=as.factor(id)), alpha = 1, show.legend = FALSE) +
-      scale_fill_manual(values = cat_color(cap_bub$grouper)) +
-      geom_text(data = cap_bub, aes(x, y, size = tot, label = grouper)) +
-      theme_void() +
-      theme(legend.position="none") +
-      coord_equal()
-
-    gp <- ggplotly(p) %>%
-      config(displayModeBar = F) %>%
-      layout(xaxis = list(showgrid = F),
-             yaxis = list(showgrid = F))
-
-    # specify hoverinfo manually on circle
-    for(i in 1:3){
-      name <- cap_bub %>% filter(id == gp$x$data[[i]]$name) %$% grouper
-      num <- cap_bub %>% filter(id == gp$x$data[[i]]$name) %$% tot
-      gp$x$data[[i]]$text = paste('<b>',name,'</b> circulation:','\n',comma(num))
-    }
-    
-    # specify hoverinfo manually on text
-    gp$x$data[[4]]$hoverlabel = list(bgcolor = cat_color(cap_bub$grouper))
-    gp$x$data[[4]]$hovertext = paste('<b>',cap_bub$grouper,'</b> circulation:','\n',comma(cap_bub$tot)) #overview_tooltip(cap_bub$grouper,cap_bub$tot,'circulation')
-
-    return(gp)
-
-  })
-
-  output$user_plot_sum <- renderPlotly({
-    user_sum <- prep_data(df, "user_type", cat = "not catalog", users = TRUE) %>%
-      group_by(user_type, s_year) %>%
-      summarise(tot = sum(count)) %>%
-      ungroup() %>%
-      mutate(user_type = var_to_label(user_type),
-             user_lab = tool_label(user_type),
-             hex = cat_color(user_type))
-    p <- plot_ly(user_sum, labels = ~user_lab, values = ~tot
-                 ,marker = list(colors=user_sum$hex)
+    p <- plot_ly(trans, labels = ~transaction_group, values = ~tot
+                 ,marker = list(colors=trans$hex)
                  ,textposition="outside"
                  ,hoverinfo = 'text'
-                 ,hovertext = overview_tooltip(user_sum$user_lab,user_sum$tot,'users')
-                 ,text = user_sum$user_lab
+                 ,hovertext =  paste('<b>',trans$transaction_group,'</b> circulation:<br>',comma_format()(trans$tot))
+                 ,text = trans$transaction_group
                  ,textinfo = "text"
                  ,rotation = -100
-                 # ,text = comma_format()(user_sum$tot)
-                   ) %>%
+    ) %>%
       add_pie(hole = 0.6) %>%
       layout(showlegend = F,
              xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
              yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
              ,dragmode =  "zoom"
-             ,margin = list(b=20,l=10,r=50,t=20,pad=4))
+             ,margin = list(b=20,l=20,r=20,t=20,pad=4))
     ggplotly(p) %>%
       config(displayModeBar = F)
+
   })
 
   output$views_plot <- renderChart({
