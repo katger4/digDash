@@ -26,6 +26,12 @@ views_choices <- c("Shared catalog" = "search_requests_shared_catalog_page_views
                    "Classic catalog" = "search_requests_classic_catalog_page_views",
                    "Encore" = "search_requestsencore__page_views")
 
+user_choices <- c("Shared catalog" = "search_requests_shared_catalog_users",
+                  "Classic catalog" = "search_requests_classic_catalog_users",
+                  "CloudLibrary" = "cloudlibrary_unique_users",
+                  "Overdrive" = "overdrive_unique_users",
+                  "Encore" = "search_requests_encore__users")
+
 time_choices <- c("Monthly","Daily","Quarterly")
 
 # to setup googlesheet auth (comment out once done)

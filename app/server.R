@@ -32,7 +32,9 @@ server <- function(input, output, session) {
   })
   
   output$log_users <- renderUI({
-    HTML("<span style='color: gray; font-size: 12px; font-family: Monospace;'><b>Note:</b> This plot uses a <a href='https://en.wikipedia.org/wiki/Logarithmic_scale'>log scale</a>. Each axis tick corresponds to a <i>ten-fold</i> increase in users.</span>")
+    if (!length(input$user_opts) == 1) {
+      HTML("<span style='color: gray; font-size: 12px; font-family: Monospace;'><b>Note:</b> This plot uses a <a href='https://en.wikipedia.org/wiki/Logarithmic_scale'>log scale</a>. Each axis tick corresponds to a <i>ten-fold</i> increase in users.</span>")
+    }
   })
   
   
@@ -41,11 +43,14 @@ server <- function(input, output, session) {
     switch(input$vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
   })
   
-  user_var <- prep_data(df, "user_type", users = TRUE)
+  user_var <- reactive({
+    if (!is.null(input$user_opts)) {
+      prep_data(df, "user_type", users = TRUE) %>% 
+        filter(user_type %in% input$user_opts)
+    }
+  })
 
-  views_var <- 
-    # prep_data(df, "user_type", views = TRUE) 
-  reactive({
+  views_var <- reactive({
     if (!is.null(input$view_opts)) {
       prep_data(df, key = "user_type", views = TRUE) %>% 
         filter(user_type %in% input$view_opts)
@@ -143,7 +148,7 @@ server <- function(input, output, session) {
       text <- HTML(paste("Total catalog users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       }
     valueBox(
-      comma_format()(sum(user_var$count)), text, icon = icon("users"),
+      comma_format()(sum(user_var()$count)), text, icon = icon("users"),
       color = "light-blue"
     )
   })
@@ -186,49 +191,53 @@ server <- function(input, output, session) {
   })
 
   output$u1 <- renderValueBox({
+    if (any(grepl('shared', input$user_opts))) {
     v_type <- 'Shared catalog'
       text <- HTML(paste(var_to_label(v_type), "users"))
       valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
         color = "navy"
-      )
+      )}
   })
 
   output$u2 <- renderValueBox({
+    if (any(grepl('classic', input$user_opts))) {
     v_type <- 'Classic catalog'
       text <- HTML(paste(var_to_label(v_type), "users"))
       valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
         color = "navy"
-      )
+      )}
   })
 
   output$u3 <- renderValueBox({
+    if (any(grepl('cloud', input$user_opts))) {
     v_type <- 'CloudLibrary'
-
       text <- HTML(paste(var_to_label(v_type), "users"))
       valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
         color = "navy"
-      )
+      )}
   })
 
   output$u4 <- renderValueBox({
+    if (any(grepl('overdrive', input$user_opts))) {
     v_type <- 'Overdrive'
       text <- HTML(paste(var_to_label(v_type), "users"))
       valueBox(
-        comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
         color = "navy"
-      )
+      )}
   })
   
   output$u5 <- renderValueBox({
+    if (any(grepl('encore', input$user_opts))) {
     v_type <- 'Encore'
     text <- HTML(paste(var_to_label(v_type), "users"))
     valueBox(
-      comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
+      comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
       color = "navy"
-    )
+    )}
   })
 
   output$tot <- renderValueBox({
@@ -382,8 +391,7 @@ server <- function(input, output, session) {
       }
       else {
         n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
-        n_base$chart(showLegend = FALSE)
-        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"))
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE)
         yTicks <- "#!d3.format(',.0')!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
       }
@@ -392,10 +400,10 @@ server <- function(input, output, session) {
     }
 
   })
-
+  
   output$users_plot <- renderChart({
     if (input$Utime_var == "Monthly"){
-      monthly <- user_var %>%
+      monthly <- user_var() %>%
         group_by(user_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
@@ -404,33 +412,52 @@ server <- function(input, output, session) {
                log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
         arrange(s_month, count)
       
-      n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      if (!length(input$user_opts) == 1) {
+        n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+        n_base$chart(color = unique(monthly$hex))
+        yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
+        tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+        n_base$yAxis(tickValues = seq(from = 1, to = max(monthly$log_count)))
+      }
+      else {
+        n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+        n_base$chart(showLegend = FALSE)
+        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"))
+        yTicks <- "#!d3.format(',.0')!#"
+        tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      }
       n <- format_nPlot(n_base, list(left = 70), yTicks, plotID = "users_plot", tooltip = tt)
-      n$chart(color = unique(monthly$hex), showControls = FALSE)
-      n$yAxis(tickValues = c(1,2,3,4,5))
       return(n)
-
+      
     }
     else if (input$Utime_var == "Daily") {
-      daily <- user_var %>%
+      daily <- user_var() %>%
         mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type),
                log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
         filter(!is.na(log_count))
-
-      n_base <- nPlot(log_count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
-      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
-      xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
-      tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base, list(left = 70, right = 70), yTicks, xFormat,"users_plot", tt)
-      n$chart(color = unique(daily$hex))
-      n$yAxis(tickValues = c(1,2,3,4))
+      
+      if (!length(input$user_opts) == 1) {
+        n_base <- nPlot(log_count ~ s_date, group = "user_lab", data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
+        yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
+        xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
+        tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
+        n_base$chart(color = unique(daily$hex))
+        n_base$yAxis(tickValues = seq(from = 1, to = max(daily$log_count)))
+      }
+      else {
+        n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_Uplot_for_size_width"]])
+        yTicks <- "#!d3.format(',.0')!#"
+        xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
+        tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' users on ' + x + '</p>'} !#"
+        n_base$chart(color = paste("#! function(d){ return '",unique(daily$hex),"'} !#"))
+        n_base$chart(showLegend = FALSE)
+      }
+      n <- format_nPlot(n_base, list(left = 100, right = 100), yTicks, xFormat,"users_plot", tt)
       return(n)
     }
     else if (input$Utime_var == "Quarterly") {
-      quarterly <- user_var %>%
+      quarterly <- user_var() %>%
         group_by(user_type, f_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
@@ -440,14 +467,23 @@ server <- function(input, output, session) {
         filter(!is.na(log_count)) %>%
         arrange(f_quarter, count)
       
-      n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-      yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
-      tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + '</p>'} !#"
+      if (!length(input$user_opts) == 1) {
+        n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+        n_base$chart(color = unique(quarterly$hex), showControls = FALSE)
+        yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
+        tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + '</p>'} !#"
+        n_base$yAxis(tickValues = seq(from = 1, to = max(quarterly$log_count)))
+      }
+      else {
+        n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE)
+        yTicks <- "#!d3.format(',.0')!#"
+        tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
+      }
       n <- format_nPlot(n_base, list(left = 80), yTicks, plotID = "users_plot", tooltip = tt)
-      n$chart(color = unique(quarterly$hex), showControls = FALSE)
       return(n)
     }
-
+    
   })
 
   output$card_plot <- renderChart({
