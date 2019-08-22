@@ -105,7 +105,7 @@ server <- function(input, output, session) {
       text <- HTML(paste("Catalog page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))}
     valueBox(
       comma_format()(sum(views_var$count)), text, icon = icon("eye"),
-      color = "blue"
+      color = "light-blue"
     )
   })
   
@@ -122,7 +122,7 @@ server <- function(input, output, session) {
       }
     valueBox(
       comma_format()(sum(user_var$count)), text, icon = icon("users"),
-      color = "blue"
+      color = "light-blue"
     )
   })
   
@@ -135,7 +135,7 @@ server <- function(input, output, session) {
     text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
-      color = "blue"
+      color = "navy"
     )
   })
   
@@ -144,7 +144,7 @@ server <- function(input, output, session) {
       text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
-        color = "blue"
+        color = "navy"
       )
   })
 
@@ -153,7 +153,7 @@ server <- function(input, output, session) {
       text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
-        color = "blue"
+        color = "navy"
       )
   })
 
@@ -162,16 +162,16 @@ server <- function(input, output, session) {
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
-        color = "blue"
+        color = "navy"
       )
   })
 
   output$u2 <- renderValueBox({
     v_type <- 'Classic catalog'
-      text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), "users"), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
-        color = "blue"
+        color = "navy"
       )
   })
 
@@ -181,7 +181,7 @@ server <- function(input, output, session) {
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
-        color = "blue"
+        color = "navy"
       )
   })
 
@@ -190,7 +190,7 @@ server <- function(input, output, session) {
       text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
         comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("headphones"),
-        color = "blue"
+        color = "navy"
       )
   })
   
@@ -199,16 +199,17 @@ server <- function(input, output, session) {
     text <- HTML(paste(var_to_label(v_type), "users", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(user_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
-      color = "blue"
+      color = "navy"
     )
   })
 
   output$tot <- renderValueBox({
     v <- switch(input$vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary')
+    color <- switch(input$vars, "sierra_trans" = 'red', "overdrive_trans" = 'yellow', "cloud_trans" = 'aqua')
     text <- HTML(paste(v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(var()$count)), text, icon = icon("exchange"),
-      color = "blue"
+      color = color
     )
   })
 
@@ -217,7 +218,7 @@ server <- function(input, output, session) {
     text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("book"),
-      color = "blue"
+      color = "navy"
     )
   })
 
@@ -228,7 +229,7 @@ server <- function(input, output, session) {
                    "cloud_trans" = HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>")))
     valueBox(
       comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("book-open"),
-      color = "blue")
+      color = "navy")
   })
 
   output$t3 <- renderValueBox({
@@ -236,19 +237,17 @@ server <- function(input, output, session) {
     text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("bookmark"),
-      color = "blue"
+      color = "navy"
     )
   })
 
   output$t4 <- renderValueBox({
-    v_type <- switch(input$vars, "sierra_trans" = '', "overdrive_trans" = 'overdrive_audiobook_holds', "cloud_trans" = 'cloudlibrary_audiobook_holds')
-    text <- switch(input$vars,
-                   "overdrive_trans" = HTML(paste0(var_to_label(v_type),"*", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>")),
-                   "cloud_trans" = HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>")))
-    if (!input$vars == "sierra_trans"){
+    v_type <- switch(input$vars, "sierra_trans" = '', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_audiobook_holds')
+    text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    if (!input$vars %in% c("sierra_trans","overdrive_trans")){
       valueBox(
       comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("book-reader"),
-      color = "blue"
+      color = "navy"
     )}
   })
 
