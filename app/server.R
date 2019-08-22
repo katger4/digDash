@@ -1,4 +1,6 @@
 server <- function(input, output, session) {
+  
+  hide("web_opts")
 
   # df <- df_ss %>%
   #   gs_read_csv(ws = 1) %>%
@@ -12,20 +14,8 @@ server <- function(input, output, session) {
   
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderUI({
-    HTML(paste("<b>Daily Digital Data Drop dashboard</b>: January 1, 2019 -", format(max(df$date_dash), "%B %d, %Y")))
+    HTML(paste("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 -", format(max(df$date_dash), "%B %d, %Y"),")"))
     })
-  
-  # output$web_tot <- renderUI({
-  #   HTML(paste("<b>",comma_format()(sum(df %>% select(contains("website"), -contains("catalog")))),"</b>page views"))
-  # })
-  
-  output$c_views_tot <- renderUI({
-    actionLink("link_to_views", HTML(paste("<span style='font-size:24px'><b>",comma_format()(sum(df %>% select(intersect(contains("views"), matches("catalog|encore"))))),"</b>page views</span>")))
-  })
-  
-  observeEvent(input$link_to_views, {
-    updateTabItems(session, "sidebar_menu", "views")
-  })
   
   output$circ_tot <- renderUI({
     actionLink("link_to_circ", HTML(paste("<span style='font-size:26px'><b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*</span>")))
@@ -35,29 +25,14 @@ server <- function(input, output, session) {
     updateTabItems(session, "sidebar_menu", "transactions")
   })
   
-  output$nc_user_tot <- renderUI({
-    actionLink("link_to_users", HTML(paste("<span style='font-size:24px'><b>",comma_format()(sum(df %>% select(ends_with("users"), -contains("website")))),"</b>unique users</span>")))
-  })
-  
-  observeEvent(input$link_to_users, {
-    updateTabItems(session, "sidebar_menu", "users")
-  })
-  
   ### Vars ###
   var <- reactive({
     switch(input$vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
   })
   
-  user_var <- prep_data(df, "user_type", cat = "catalog", users = TRUE)
+  user_var <- prep_data(df, "user_type", users = TRUE)
 
-  # user_var <- reactive({
-  #   switch(input$users_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", users = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", users = TRUE))
-  # })
-
-  views_var <- prep_data(df, "user_type", cat = "catalog", views = TRUE)
-  # reactive({
-  #   # switch(input$views_vars, "nc_users" = prep_data(df, "user_type", cat = "not catalog", views = TRUE), "c_users" = prep_data(df, "user_type", cat = "catalog", views = TRUE))
-  # })
+  views_var <- prep_data(df, "user_type", views = TRUE)
   
   web_var <- reactive({
     prep_data(df, key = "user_type", web = TRUE) %>% 
@@ -70,7 +45,7 @@ server <- function(input, output, session) {
   
   output$card_tot <- output$card_tot_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_cards", HTML("<span style='font-size:30px; color:#dbdbdb;'>New card sign ups</span>"))
+      text <- actionLink("link_to_cards", HTML("<span style='font-size:32px; color:#dbdbdb;'>New card sign ups</span>"))
     }
     else {
       text <- HTML(paste("New card sign ups",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
@@ -88,10 +63,10 @@ server <- function(input, output, session) {
   
   output$Vweb_box <- output$Vweb_box_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_Vweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>Website page views</span>"))
+      text <- actionLink("link_to_Vweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>NYPL.org page views</span>"))
     }
     else {
-      text <- HTML(paste("Website page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste("NYPL.org page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     }
     
     valueBox(
@@ -106,10 +81,10 @@ server <- function(input, output, session) {
   
   output$Uweb_box <- output$Uweb_box_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_Uweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>Website users</span>"))
+      text <- actionLink("link_to_Uweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>NYPL.org users</span>"))
     }
     else {
-      text <- HTML(paste("Website users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste("NYPL.org users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     }
     
     valueBox(
@@ -122,30 +97,55 @@ server <- function(input, output, session) {
     updateTabItems(session, "sidebar_menu", "web")
   })
 
-  output$views_tot <- renderValueBox({
-    text <- HTML(paste("Page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+  output$views_tot <- output$views_tot_tab <- renderValueBox({
+    if (input$sidebar_menu == "overview") {
+      text <- actionLink("link_to_users", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog page views</span>"))
+    }
+    else{
+      text <- HTML(paste("Catalog page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))}
     valueBox(
       comma_format()(sum(views_var$count)), text, icon = icon("eye"),
       color = "blue"
     )
   })
   
-  output$v1 <- renderValueBox({
-    v_type <- 'Classic catalog'
-      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-      valueBox(
-        comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
-        color = "blue"
-      )
+  observeEvent(input$link_to_views, {
+    updateTabItems(session, "sidebar_menu", "views")
   })
   
-  output$v2 <- renderValueBox({
+  output$users_tot <- output$users_tot_tab <- renderValueBox({
+    if (input$sidebar_menu == "overview") {
+      text <- actionLink("link_to_views", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog users</span>"))
+    }
+    else {
+      text <- HTML(paste("Catalog users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      }
+    valueBox(
+      comma_format()(sum(user_var$count)), text, icon = icon("users"),
+      color = "blue"
+    )
+  })
+  
+  observeEvent(input$link_to_users, {
+    updateTabItems(session, "sidebar_menu", "users")
+  })
+  
+  output$v1 <- renderValueBox({
     v_type <- 'Shared catalog'
     text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
       comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
       color = "blue"
     )
+  })
+  
+  output$v2 <- renderValueBox({
+    v_type <- 'Classic catalog'
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      valueBox(
+        comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
+        color = "blue"
+      )
   })
 
   output$v3 <- renderValueBox({
@@ -155,14 +155,6 @@ server <- function(input, output, session) {
         comma_format()(sum(views_var %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
         color = "blue"
       )
-  })
-
-  output$users_tot <- renderValueBox({
-    text <- HTML(paste("Unique users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-    valueBox(
-      comma_format()(sum(user_var$count)), text, icon = icon("users"),
-      color = "blue"
-    )
   })
 
   output$u1 <- renderValueBox({
@@ -269,16 +261,16 @@ server <- function(input, output, session) {
       ungroup() %>%
       mutate(user_type = var_to_label(user_type),
              user_lab = tool_label(user_type),
-             hex = cat_color(user_lab)) 
-    
+             hex = cat_color(user_lab))
+
     view_sum$user_lab <- factor(view_sum$user_lab, levels = unique(view_sum$user_lab)[order(view_sum$tot, decreasing = TRUE)])
 
     p <- plot_ly(view_sum, x= ~tot, y = ~user_lab
                  ,type = "bar"
                  ,orientation = 'h'
                  ,marker = list(color=view_sum$hex)
-                 # ,text = comma_format()(view_sum$tot)
-                 # ,textposition="outside"
+                 ,text = ifelse(view_sum$tot < 1000000,unit_format(unit = "k", scale = 1e-3, sep = "")(view_sum$tot), unit_format(unit = "M", scale = 1e-6, sep = "")(view_sum$tot))
+                 ,textposition="outside"
                  ,cliponaxis = FALSE
                  ,hoverinfo = 'text'
                  ,hovertext = overview_tooltip(view_sum$user_lab,view_sum$tot,'page views')
@@ -288,10 +280,11 @@ server <- function(input, output, session) {
              ,xaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
              ,yaxis = list(title = "", showgrid = FALSE, zeroline = FALSE, showticklabels = TRUE)
              ,dragmode =  "zoom"
-             ,margin = list(b=10,l=10,r=10,t=10,pad=4)
+             ,margin = list(b=10,l=10,r=70,t=10,pad=4)
       )
     ggplotly(p) %>%
       config(displayModeBar = F)
+    
   })
 
   output$trans_plot_sum <- renderPlotly({
@@ -315,8 +308,7 @@ server <- function(input, output, session) {
     gp <- ggplotly(p) %>%
       config(displayModeBar = F) %>%
       layout(xaxis = list(showgrid = F),
-             yaxis = list(showgrid = F)
-             ,dragmode =  "zoom")
+             yaxis = list(showgrid = F))
 
     # specify hoverinfo manually on circle
     for(i in 1:3){

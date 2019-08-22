@@ -18,9 +18,9 @@ ui <- dashboardPage(title="Digital dashboard",
                                                               menuItem("Overview", tabName = "overview", icon = icon("globe"))
                                                               ,menuItem("New Cards", tabName = "cards", icon = icon("id-card"))
                                                               ,menuItem("Circulation Activity", tabName = "transactions", icon = icon("arrows-alt-h"))
-                                                              ,menuItem("Website", tabName = "web", icon = icon("newspaper"))
-                                                              ,menuItem("Users", tabName = "users", icon = icon("users"))
-                                                              ,menuItem("Page Views", tabName = "views", icon = icon("eye"))
+                                                              ,menuItem("NYPL.org", tabName = "web", icon = icon("newspaper"))
+                                                              ,menuItem("Catalog Users", tabName = "users", icon = icon("users"))
+                                                              ,menuItem("Catalog Page Views", tabName = "views", icon = icon("eye"))
                     )),
                     dashboardBody(
                       useShinyjs(),
@@ -40,19 +40,16 @@ ui <- dashboardPage(title="Digital dashboard",
                         tabItem(tabName = "overview",
                                 fluidRow(box(width=12
                                              ,title = htmlOutput("latest_day_str")
-                                             # span(paste(HTML("<strong>Daily Digital Data Drop dashboard</strong>:"),)) 
-                                             ,solidHeader = TRUE #,includeHTML("about.html")
+                                             ,solidHeader = TRUE 
                                              ,status = "primary"
                                              ,align = "center"
                                 ))
-                                ,fluidRow(column(width=3),column(width=6,valueBoxOutput("card_tot", width = NULL)),column(width=3))
+                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot", width = NULL)),column(width=4))
                                 ,fluidRow(column(width = 4
                                                  ,fluidRow(br())
                                                  ,fluidRow(valueBoxOutput("Vweb_box", width = 12))
-                                                 # ,fluidRow(box(uiOutput("nc_views_tot")
-                                                 #               ,width = NULL, plotlyOutput(outputId = "views_plot_sum", height = "200")%>% withSpinner(color="#0dc5c1")))
-                                                 ,fluidRow(box(uiOutput("c_views_tot")
-                                                               ,width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
+                                                 ,fluidRow(valueBoxOutput("views_tot", width = 12))
+                                                 # ,fluidRow(box(uiOutput("c_views_tot"),width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                 )
                                 ,column(width = 4
                                         ,box(uiOutput("circ_tot")
@@ -63,17 +60,14 @@ ui <- dashboardPage(title="Digital dashboard",
                                 ,column(width = 4
                                         ,fluidRow(br())
                                         ,fluidRow(valueBoxOutput("Uweb_box", width = 12))
-                                        ,fluidRow(box(uiOutput("nc_user_tot")
-                                                      ,width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")%>% withSpinner(color="#0dc5c1")))
-                                        # ,fluidRow(box(uiOutput("c_user_tot")
-                                        #               ,width = NULL, plotlyOutput(outputId = "cat_user_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
+                                        ,fluidRow(valueBoxOutput("users_tot", width = 12))
+                                        # ,fluidRow(box(uiOutput("nc_user_tot"), width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")%>% withSpinner(color="#0dc5c1")))
                                 )
                                 )
-                                # ,fluidRow(column(width=3),column(width=3,valueBoxOutput("kan_visits", width = NULL)),column(width=3,valueBoxOutput("kan_plays", width = NULL)),column(width=3))
-                                ,fluidRow(box(width = 11,"*Circulation activity includes checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
+                                ,fluidRow(box(width = 11,"*Circulation activity includes checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 12px; font-family: Monospace;"))
                         ),
                         tabItem(tabName = "views"
-                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("views_tot", width = NULL)),column(width=4))
+                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("views_tot_tab", width = NULL)),column(width=4))
                                 ,fluidRow(column(width=1)
                                           ,valueBoxOutput("v1",width = 3)
                                           ,valueBoxOutput("v2",width = 3)
@@ -85,15 +79,13 @@ ui <- dashboardPage(title="Digital dashboard",
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
-                                                        # ,radioButtons(inputId = "views_vars", label = "Variable", choices = views_choices,
-                                                        #               selected = "c_users")
                                                         ,radioButtons(inputId = "Vtime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
                                   ) # views controls col
                                 ) # views row
                         ), # views tab
                         tabItem(tabName = "users"
-                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot", width = NULL)),column(width=4))
+                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("users_tot_tab", width = NULL)),column(width=4))
                                 ,fluidRow(column(width=1)
                                           ,column(width=2,valueBoxOutput("u1", width = NULL)),column(width=2,valueBoxOutput("u2", width = NULL))
                                           ,column(width=2,valueBoxOutput("u3", width = NULL)),column(width=2,valueBoxOutput("u4", width = NULL)),column(width=2,valueBoxOutput("u5", width = NULL))
@@ -104,8 +96,6 @@ ui <- dashboardPage(title="Digital dashboard",
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
-                                                        # ,radioButtons(inputId = "users_vars", label = "Variable", choices = user_choices,
-                                                        #               selected = "nc_users")
                                                         ,radioButtons(inputId = "Utime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
                                   ) # users controls col
@@ -124,7 +114,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                 ) # row
                         ),
                         tabItem(tabName = "web"
-                                ,fluidRow(column(width=2),column(width=4,valueBoxOutput("Vweb_box_tab", width = NULL)),column(width=4,valueBoxOutput("Uweb_box_tab", width = NULL)),column(width=2))
+                                ,fluidRow(column(width=2),column(width=4,valueBoxOutput("Uweb_box_tab", width = NULL)),column(width=4,valueBoxOutput("Vweb_box_tab", width = NULL)),column(width=2))
                                 ,fluidRow(
                                   column(width = 9
                                          ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "web_plot", "nvd3"),plotOutput("Wplot_for_size", height = "1px")))

@@ -113,15 +113,13 @@ create_fy_qtr <- function(ymd_date, fy_year) {
   paste0(fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
 }
 
-prep_data <- function(df, key, cat, users, views, trans_name, trans_sum, card, web, choices) {
-  if (!missing(cat)){  
-    if (!missing(users)) {
-      selected <- df %>% select(ends_with("users"), -contains("website"), date_dash)
-      } 
-    else if (!missing(views)) {
-        selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
-      } 
-  }
+prep_data <- function(df, key, users, views, trans_name, trans_sum, card, web, choices) {
+  if (!missing(users)) {
+    selected <- df %>% select(ends_with("users"), -contains("website"), date_dash)
+  } 
+  if (!missing(views)) {
+    selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
+  } 
   if (!missing(trans_name)) {
     selected <- df %>% select(starts_with(trans_name), -ends_with("users"), date_dash)
   }
