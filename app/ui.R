@@ -83,8 +83,10 @@ ui <- dashboardPage(title="Digital dashboard",
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
+                                                        ,checkboxGroupInput("view_opts", "Variable", choices = views_choices, selected = views_choices)
                                                         ,radioButtons(inputId = "Vtime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
+                                          ,fluidRow(box(width = NULL,uiOutput("log_views")))
                                   ) # views controls col
                                 ) # views row
                         ), # views tab
@@ -102,6 +104,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                           ,fluidRow(box(width=NULL
                                                         ,radioButtons(inputId = "Utime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
+                                          ,fluidRow(box(width = NULL,uiOutput("log_users")))
                                   ) # users controls col
                                 ) # users row
                         ), # users tab
@@ -149,7 +152,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                                                       selected = "Monthly")))
                                   ) # trans controls col
                                 ) # trans row
-                                ,fluidRow(box(id = "od_foot",width = 11,"*Overdrive holds no longer tallied as of June 6, 2019.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
+                                # ,fluidRow(box(id = "od_foot",width = 11,"*Overdrive holds no longer tallied as of June 6, 2019.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                         ) # trans tab
                       ) # all tabs
                       

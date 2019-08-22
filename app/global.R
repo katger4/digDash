@@ -22,7 +22,9 @@ var_choices <- c("Sierra circulation"="sierra_trans",
 
 web_choices <- c("Users" = "website_visits_users", "Page views" = "website_visits_page_views")
 
-views_choices <- c("Shared catalog" = "s_cat","Classic catalog" = "c_cat","Encore" = "enc")
+views_choices <- c("Shared catalog" = "search_requests_shared_catalog_page_views",
+                   "Classic catalog" = "search_requests_classic_catalog_page_views",
+                   "Encore" = "search_requestsencore__page_views")
 
 time_choices <- c("Monthly","Daily","Quarterly")
 
