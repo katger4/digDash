@@ -24,9 +24,6 @@ web_choices <- c("Users" = "website_visits_users", "Page views" = "website_visit
 
 views_choices <- c("Shared catalog" = "s_cat","Classic catalog" = "c_cat","Encore" = "enc")
 
-# user_choices <- c("CloudLibrary and Overdrive" = "nc_users",
-#                   "Encore, Classic, and Shared catalogs" = "c_users")
-
 time_choices <- c("Monthly","Daily","Quarterly")
 
 # to setup googlesheet auth (comment out once done)
@@ -121,10 +118,13 @@ prep_data <- function(df, key, users, views, trans_name, trans_sum, card, web, c
     selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
   } 
   if (!missing(trans_name)) {
-    selected <- df %>% select(starts_with(trans_name), -ends_with("users"), date_dash)
+    selected <- df %>%
+      select(-overdrive_ebook_holds,-overdrive_audiobook_holds) %>% 
+      select(starts_with(trans_name), -ends_with("users"), date_dash) 
   }
   if (!missing(trans_sum)) {
-    selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash)
+    selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash) %>%
+      select(-overdrive_ebook_holds,-overdrive_audiobook_holds)
   }
   
   if (!missing(web)) {
