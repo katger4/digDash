@@ -44,7 +44,7 @@ user_choices <- c("Shared catalog" = "search_requests_shared_catalog_users",
                   "Overdrive" = "overdrive_unique_users",
                   "Encore" = "search_requests_encore__users")
 
-time_choices <- c("Monthly","Daily","Quarterly")
+time_choices <- c("Monthly","Daily","Quarterly","Weekday")
 
 # to setup googlesheet auth (comment out once done)
 # options(httr_oob_default=TRUE) 
@@ -53,10 +53,7 @@ time_choices <- c("Monthly","Daily","Quarterly")
 # file.info("shiny_app_token.rds")
 
 # googlesheets::gs_auth(token = "shiny_app_token.rds")
-# df_ss <- gs_title("data_drop") 
-
-# latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash)))
-# latest_day_str <- format(max(df$date_dash), "%B %d, %Y")
+# df_ss <- gs_title("data_drop")
 
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
@@ -166,7 +163,8 @@ prep_data <- function(df, key, users, views, trans_name, trans_sum, card, web, c
            s_year = year(date_dash),
            f_month = create_fy_month(date_dash),
            f_year = create_fy_year(date_dash),
-           f_quarter = create_fy_qtr(date_dash, f_year)
+           f_quarter = create_fy_qtr(date_dash, f_year),
+           s_weekday = factor(weekdays(date_dash), levels = c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), ordered = TRUE)
     ) %>%
     arrange(s_date)
 }

@@ -53,7 +53,6 @@ ui <- dashboardPage(title="Digital dashboard",
                                                  ,fluidRow(br())
                                                  ,fluidRow(valueBoxOutput("Vweb_box", width = 12))
                                                  ,fluidRow(valueBoxOutput("views_tot", width = 12))
-                                                 # ,fluidRow(box(uiOutput("c_views_tot"),width = NULL, plotlyOutput(outputId = "cat_views_plot_sum", height = "150px")%>% withSpinner(color="#0dc5c1")))
                                 )
                                 ,column(width = 4
                                         ,box(uiOutput("circ_tot")
@@ -65,10 +64,9 @@ ui <- dashboardPage(title="Digital dashboard",
                                         ,fluidRow(br())
                                         ,fluidRow(valueBoxOutput("Uweb_box", width = 12))
                                         ,fluidRow(valueBoxOutput("users_tot", width = 12))
-                                        # ,fluidRow(box(uiOutput("nc_user_tot"), width = NULL, plotlyOutput(outputId = "user_plot_sum", height = "200px")%>% withSpinner(color="#0dc5c1")))
                                 )
                                 )
-                                ,fluidRow(box(width = 11,"*Circulation activity includes checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 12px; font-family: Monospace;"))
+                                ,fluidRow(box(width = 12,"*Circulation activity includes checkins, checkouts, holds, and renewals.", style = "color: gray; font-size: 12px; font-family: Monospace;"))
                         ),
                         tabItem(tabName = "views"
                                 ,fluidRow(column(width=4),column(width=4,valueBoxOutput("views_tot_tab", width = NULL)),column(width=4))
