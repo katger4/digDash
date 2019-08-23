@@ -147,16 +147,16 @@ ui <- dashboardPage(title="Digital dashboard",
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
-                                                        ,radioButtons(inputId = "vars", label = "Variable", choices = var_choices,
+                                                        ,radioButtons(inputId = "circ_vars", label = "Circulation System", choices = circ_choices,
                                                                       selected = "sierra_trans")
+                                                        ,conditionalPanel("input.circ_vars === 'sierra_trans'", checkboxGroupInput("sierra_opts", "Variable", choices = sierra_choices, selected = sierra_choices))
+                                                        ,conditionalPanel("input.circ_vars === 'overdrive_trans'", checkboxGroupInput("odrive_opts", "Variable", choices = odrive_choices, selected = odrive_choices))
+                                                        ,conditionalPanel("input.circ_vars === 'cloud_trans'", checkboxGroupInput("cloud_opts", "Variable", choices = cloud_choices, selected = cloud_choices))
                                                         ,radioButtons(inputId = "Ttime_var", label = "Time", choices = time_choices,
                                                                       selected = "Monthly")))
                                   ) # trans controls col
                                 ) # trans row
-                                # ,fluidRow(box(id = "od_foot",width = 11,"*Overdrive holds no longer tallied as of June 6, 2019.", style = "color: gray; font-size: 10px; font-family: Monospace;"))
                         ) # trans tab
                       ) # all tabs
-                      
-                      
                     ) # db body
 )

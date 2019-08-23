@@ -37,8 +37,11 @@ server <- function(input, output, session) {
   
   
   ### Vars ###
-  var <- reactive({
-    switch(input$vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
+  circ_var <- reactive({
+      switch(input$circ_vars, 
+             "sierra_trans" = if (!is.null(input$sierra_opts)) {prep_data(df, "transaction_type", trans_name= "sierra") %>% filter(transaction_type %in% input$sierra_opts)}, 
+             "overdrive_trans" = if (!is.null(input$odrive_opts)) {prep_data(df, "transaction_type", trans_name= "overdrive") %>% filter(transaction_type %in% input$odrive_opts)}, 
+             "cloud_trans" = if (!is.null(input$cloud_opts)) {prep_data(df, "transaction_type", trans_name= "cloudlibrary") %>% filter(transaction_type %in% input$cloud_opts)})
   })
   
   user_var <- reactive({
@@ -90,7 +93,7 @@ server <- function(input, output, session) {
     }
     
     valueBox(
-      comma_format()(sum(df %>% select(intersect(ends_with("views"), contains("website"))))), text, icon = icon("eye"),
+      comma_format()(sum(df %>% select(intersect(ends_with("views"), contains("website"))))), text, icon = icon("search"),
       color = "black"
     )
   })
@@ -108,7 +111,7 @@ server <- function(input, output, session) {
     }
     
     valueBox(
-      comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("website"))))), text, icon = icon("users"),
+      comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("website"))))), text, icon = icon("user-circle"),
       color = "black"
     )
   })
@@ -234,53 +237,57 @@ server <- function(input, output, session) {
   })
 
   output$tot <- renderValueBox({
-    v <- switch(input$vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary')
-    color <- switch(input$vars, "sierra_trans" = 'red', "overdrive_trans" = 'yellow', "cloud_trans" = 'aqua')
-    text <- HTML(paste(v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    v <- switch(input$circ_vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary')
+    color <- switch(input$circ_vars, "sierra_trans" = 'red', "overdrive_trans" = 'yellow', "cloud_trans" = 'aqua')
+    text <- HTML(paste("Total", v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     valueBox(
-      comma_format()(sum(var()$count)), text, icon = icon("exchange"),
+      comma_format()(sum(circ_var()$count)), text, icon = icon("exchange"),
       color = color
     )
   })
 
   output$t1 <- renderValueBox({
-    v_type <- switch(input$vars, "sierra_trans" = 'sierra_checkins', "overdrive_trans" = 'overdrive_ebook_checkouts', "cloud_trans" = 'cloudlibrary_ebook_checkouts')
-    text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-    icon <- switch(input$vars, "sierra_trans" = icon("book"), "overdrive_trans" = icon("book-open"), "cloud_trans" = icon("book-open"))
-    valueBox(
-      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
-      color = "navy"
-    )
+    v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_checkins', "overdrive_trans" = 'overdrive_audiobook_checkouts', "cloud_trans" = 'cloudlibrary_audiobook_checkouts')
+    if (any(grepl(v_type, circ_var()$transaction_type))) {
+      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      icon <- switch(input$circ_vars, "sierra_trans" = icon("book"), "overdrive_trans" = icon("headphones"), "cloud_trans" = icon("headphones"))
+      valueBox(
+        comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
+        color = "navy"
+      )}
   })
 
   output$t2 <- renderValueBox({
-    v_type <- switch(input$vars, "sierra_trans" = 'sierra_checkouts', "overdrive_trans" = 'overdrive_audiobook_checkouts', "cloud_trans" = 'cloudlibrary_ebook_holds')
-    text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-    icon <- switch(input$vars, "sierra_trans" = icon("book-open"), "overdrive_trans" = icon("headphones"), "cloud_trans" = icon("bookmark"))
-    valueBox(
-      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
-      color = "navy")
+    v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_checkouts', "overdrive_trans" = 'overdrive_ebook_checkouts', "cloud_trans" = 'cloudlibrary_audiobook_holds')
+    if (any(grepl(v_type, circ_var()$transaction_type))) {
+      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      icon <- switch(input$circ_vars, "sierra_trans" = icon("book-open"), "overdrive_trans" = icon("book-open"), "cloud_trans" = icon("pause-circle"))
+      valueBox(
+        comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
+        color = "navy")}
   })
 
   output$t3 <- renderValueBox({
-    v_type <- switch(input$vars, "sierra_trans" = 'sierra_renewals', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_audiobook_checkouts')
-    icon <- switch(input$vars, "sierra_trans" = icon("bookmark"), "cloud_trans" = icon("headphones"))
-    if (!input$vars %in% c("overdrive_trans")){
-      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-      valueBox(
-        comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
-        color = "navy"
-    )}
+    v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_renewals', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_ebook_checkouts')
+    if (any(grepl(v_type, circ_var()$transaction_type))) {
+      icon <- switch(input$circ_vars, "sierra_trans" = icon("bookmark"), "cloud_trans" = icon("book-open"))
+      if (!input$circ_vars %in% c("overdrive_trans")){
+        text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+        valueBox(
+          comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
+          color = "navy"
+        )}}
   })
 
   output$t4 <- renderValueBox({
-    v_type <- switch(input$vars, "sierra_trans" = '', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_audiobook_holds')
-    text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-    if (!input$vars %in% c("sierra_trans","overdrive_trans")){
-      valueBox(
-      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("pause-circle"),
-      color = "navy"
-    )}
+    v_type <- switch(input$circ_vars, "sierra_trans" = '', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_ebook_holds')
+    if (any(grepl(v_type, circ_var()$transaction_type))) {
+      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      if (!input$circ_vars %in% c("sierra_trans","overdrive_trans")){
+        valueBox(
+          comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("bookmark"),
+          color = "navy"
+        )}}
   })
 
   ### PLOTS ###
@@ -540,8 +547,7 @@ server <- function(input, output, session) {
       }
       else {
         n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
-        n_base$chart(showLegend = FALSE)
-        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"))
+        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"), showLegend = FALSE)
       }
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "web_plot", tooltip = tt)
@@ -557,8 +563,7 @@ server <- function(input, output, session) {
         n_base$chart(color = unique(daily$hex))
       }
       else {
-        n_base$chart(showLegend = FALSE)
-        n_base$chart(color = paste("#! function(d){ return '",unique(daily$hex),"'} !#"))
+        n_base$chart(color = paste("#! function(d){ return '",unique(daily$hex),"'} !#"), showLegend = FALSE)
       }
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
@@ -580,8 +585,7 @@ server <- function(input, output, session) {
       }
       else {
         n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
-        n_base$chart(showLegend = FALSE)
-        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"))
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE)
       }
 
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
@@ -593,47 +597,63 @@ server <- function(input, output, session) {
 
   output$trans_plot <- renderChart({
     if (input$Ttime_var == "Monthly"){
-      monthly <- var() %>%
+      monthly <- circ_var() %>%
         group_by(transaction_type, s_month) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(transaction_type = var_to_label(transaction_type),
                hex = trans_shade(transaction_type))
-
-      n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+      
+      if (!length(unique(circ_var()$transaction_type)) == 1) {
+        n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+        n_base$chart(color = unique(monthly$hex))
+      }
+      else {
+        n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
+      }
+      
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
-      n$chart(color = unique(monthly$hex))
       return(n)
 
     }
     else if (input$Ttime_var == "Daily") {
-      daily <- var() %>% mutate(transaction_type = var_to_label(transaction_type),
-                                hex = trans_shade(transaction_type))
-
+      daily <- circ_var() %>% 
+        mutate(transaction_type = var_to_label(transaction_type),
+               hex = trans_shade(transaction_type))
+      
       n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Tplot_for_size_width"]])
+      if (!length(unique(circ_var()$transaction_type)) == 1) {
+        n_base$chart(color = unique(daily$hex))
+      }
+      else {
+        n_base$chart(color = paste("#! function(d){ return '",unique(daily$hex),"'} !#"), showLegend = FALSE)
+      }
+      
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
       tt <- "#! function(key, x, y){ return '<p><strong>' + key + '</strong></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
-      n$chart(color = unique(daily$hex))
       return(n)
     }
     else if (input$Ttime_var == "Quarterly") {
-      quarterly <- var() %>%
+      quarterly <- circ_var() %>%
         group_by(transaction_type, f_quarter) %>%
         summarise(count = sum(count)) %>%
         ungroup() %>%
         mutate(transaction_type = var_to_label(transaction_type),
                hex = trans_shade(transaction_type))
 
-      n_base <- nPlot(count ~ f_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+      if (!length(unique(circ_var()$transaction_type)) == 1) {
+        n_base <- nPlot(count ~ f_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+        n_base$chart(color = unique(quarterly$hex))
+      }
+      else {
+        n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
+      }
       tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
-      n <- format_nPlot(n_base,
-                        margin = list(left = 100),
-                        ytickFormat = "#!d3.format(',.0')!#",
-                        plotID = "trans_plot",
-                        tooltip = tt)
-      n$chart(color = unique(quarterly$hex))
+      n <- format_nPlot(n_base,margin = list(left = 100),ytickFormat = "#!d3.format(',.0')!#",plotID = "trans_plot",tooltip = tt)
       return(n)
     }
 

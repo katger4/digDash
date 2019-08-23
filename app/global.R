@@ -16,9 +16,21 @@ library(packcircles)
 library(plotly)
 library(rCharts)
 
-var_choices <- c("Sierra circulation"="sierra_trans",
-                 "Overdrive circulation" = "overdrive_trans",
-                 "CloudLibrary circulation" = "cloud_trans")
+circ_choices <- c("Sierra"="sierra_trans",
+                 "Overdrive" = "overdrive_trans",
+                 "CloudLibrary" = "cloud_trans")
+
+sierra_choices <- c("Checkins" = "sierra_checkins",
+                 "Checkouts" = "sierra_checkouts",
+                 "Renewals" = "sierra_renewals")
+
+odrive_choices <- c("Audiobook checkouts" = "overdrive_audiobook_checkouts",
+                    "Ebook checkouts" = "overdrive_ebook_checkouts")
+
+cloud_choices <- c("Audiobook checkouts" = "cloudlibrary_audiobook_checkouts",
+                   "Audiobook holds" = "cloudlibrary_audiobook_holds",
+                   "Ebook checkouts" = "cloudlibrary_ebook_checkouts",
+                   "Ebook holds" = "cloudlibrary_ebook_holds")
 
 web_choices <- c("Users" = "website_visits_users", "Page views" = "website_visits_page_views")
 
