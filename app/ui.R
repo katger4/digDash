@@ -17,7 +17,7 @@ ui <- dashboardPage(title="Digital dashboard",
                     dashboardSidebar(width = 250, sidebarMenu(id = "sidebar_menu",
                                                               menuItem("Overview", tabName = "overview", icon = icon("globe"))
                                                               ,menuItem("New Cards", tabName = "cards", icon = icon("id-card"))
-                                                              ,menuItem("Circulation Activity", tabName = "transactions", icon = icon("arrows-alt-h"))
+                                                              ,menuItem("Circulation Activity", tabName = "transactions", icon = icon("exchange"))
                                                               ,menuItem("NYPL.org", tabName = "web", icon = icon("newspaper"))
                                                               ,menuItem("Catalog Users", tabName = "users", icon = icon("users"))
                                                               ,menuItem("Catalog Page Views", tabName = "views", icon = icon("eye"))

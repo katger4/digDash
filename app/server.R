@@ -1,6 +1,4 @@
 server <- function(input, output, session) {
-  
-  # hide("web_opts")
 
   # df <- df_ss %>%
   #   gs_read_csv(ws = 1) %>%
@@ -14,7 +12,7 @@ server <- function(input, output, session) {
   
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderUI({
-    HTML(paste("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 -", format(max(df$date_dash), "%B %d, %Y"),")"))
+    HTML(paste0("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 - ", format(max(df$date_dash), "%B %d, %Y"),")"))
     })
   
   output$circ_tot <- renderUI({
@@ -57,8 +55,6 @@ server <- function(input, output, session) {
     }
   })
   
-  views_static <- prep_data(df, "user_type", views = TRUE)
-  
   web_var <- reactive({
     if (!is.null(input$web_opts)) {
     prep_data(df, key = "user_type", web = TRUE) %>% 
@@ -66,10 +62,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # num_vars <- reactive({length(input$web_opts)})
-  
   ### VALUE BOXES ###
-  
   output$card_tot <- output$card_tot_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
       text <- actionLink("link_to_cards", HTML("<span style='font-size:32px; color:#dbdbdb;'>New card sign ups</span>"))
@@ -92,7 +85,7 @@ server <- function(input, output, session) {
     if (input$sidebar_menu == "overview") {
       text <- actionLink("link_to_Vweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>NYPL.org page views</span>"))
     }
-    else {
+    else if (any(grepl('view', input$web_opts))) {
       text <- HTML(paste("NYPL.org page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     }
     
@@ -110,7 +103,7 @@ server <- function(input, output, session) {
     if (input$sidebar_menu == "overview") {
       text <- actionLink("link_to_Uweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>NYPL.org users</span>"))
     }
-    else {
+    else if (any(grepl('user', input$web_opts))) {
       text <- HTML(paste("NYPL.org users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     }
     
@@ -159,12 +152,12 @@ server <- function(input, output, session) {
   
   output$v1 <- renderValueBox({
     if (any(grepl('shared', input$view_opts))) {
-    v_type <- 'Shared catalog'
-    text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-    valueBox(
-      comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
-      color = "navy"
-    )
+      v_type <- 'Shared catalog'
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      valueBox(
+        comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
+        color = "navy"
+      )
     }
   })
   
@@ -192,7 +185,7 @@ server <- function(input, output, session) {
 
   output$u1 <- renderValueBox({
     if (any(grepl('shared', input$user_opts))) {
-    v_type <- 'Shared catalog'
+      v_type <- 'Shared catalog'
       text <- HTML(paste(var_to_label(v_type), "users"))
       valueBox(
         comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
@@ -212,7 +205,7 @@ server <- function(input, output, session) {
 
   output$u3 <- renderValueBox({
     if (any(grepl('cloud', input$user_opts))) {
-    v_type <- 'CloudLibrary'
+      v_type <- 'CloudLibrary'
       text <- HTML(paste(var_to_label(v_type), "users"))
       valueBox(
         comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("cloud"),
@@ -232,12 +225,12 @@ server <- function(input, output, session) {
   
   output$u5 <- renderValueBox({
     if (any(grepl('encore', input$user_opts))) {
-    v_type <- 'Encore'
-    text <- HTML(paste(var_to_label(v_type), "users"))
-    valueBox(
-      comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
-      color = "navy"
-    )}
+      v_type <- 'Encore'
+      text <- HTML(paste(var_to_label(v_type), "users"))
+      valueBox(
+        comma_format()(sum(user_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
+        color = "navy"
+      )}
   })
 
   output$tot <- renderValueBox({
@@ -253,8 +246,9 @@ server <- function(input, output, session) {
   output$t1 <- renderValueBox({
     v_type <- switch(input$vars, "sierra_trans" = 'sierra_checkins', "overdrive_trans" = 'overdrive_ebook_checkouts', "cloud_trans" = 'cloudlibrary_ebook_checkouts')
     text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    icon <- switch(input$vars, "sierra_trans" = icon("book"), "overdrive_trans" = icon("book-open"), "cloud_trans" = icon("book-open"))
     valueBox(
-      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("book"),
+      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
       color = "navy"
     )
   })
@@ -262,17 +256,19 @@ server <- function(input, output, session) {
   output$t2 <- renderValueBox({
     v_type <- switch(input$vars, "sierra_trans" = 'sierra_checkouts', "overdrive_trans" = 'overdrive_audiobook_checkouts', "cloud_trans" = 'cloudlibrary_ebook_holds')
     text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    icon <- switch(input$vars, "sierra_trans" = icon("book-open"), "overdrive_trans" = icon("headphones"), "cloud_trans" = icon("bookmark"))
     valueBox(
-      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("book-open"),
+      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
       color = "navy")
   })
 
   output$t3 <- renderValueBox({
     v_type <- switch(input$vars, "sierra_trans" = 'sierra_renewals', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_audiobook_checkouts')
+    icon <- switch(input$vars, "sierra_trans" = icon("bookmark"), "cloud_trans" = icon("headphones"))
     if (!input$vars %in% c("overdrive_trans")){
       text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       valueBox(
-        comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("bookmark"),
+        comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
         color = "navy"
     )}
   })
@@ -282,13 +278,12 @@ server <- function(input, output, session) {
     text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
     if (!input$vars %in% c("sierra_trans","overdrive_trans")){
       valueBox(
-      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("book-reader"),
+      comma_format()(sum(var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("pause-circle"),
       color = "navy"
     )}
   })
 
   ### PLOTS ###
-
   output$trans_plot_sum <- renderPlotly({
     trans <- prep_data(df, key = "transaction_type", trans_sum = TRUE) %>%
       mutate(transaction_group = tool_label(transaction_type),
@@ -329,14 +324,14 @@ server <- function(input, output, session) {
 
       if (!length(input$view_opts) == 1) {
         n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
-        n_base$chart(color = unique(monthly$hex))
+        n_base$chart(color = unique(monthly$hex), showControls = FALSE)
         yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
         n_base$yAxis(tickValues = seq(from = 1, to = max(monthly$log_count)))
       }
       else {
         n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
-        n_base$chart(showLegend = FALSE)
+        n_base$chart(showLegend = FALSE, showControls = FALSE)
         n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"))
         yTicks <- "#!d3.format(',.0')!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
@@ -391,7 +386,7 @@ server <- function(input, output, session) {
       }
       else {
         n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
-        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE)
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showControls = FALSE, showLegend = FALSE)
         yTicks <- "#!d3.format(',.0')!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' page views in ' + x + ' 2019 </p>'} !#"
       }
@@ -414,15 +409,14 @@ server <- function(input, output, session) {
       
       if (!length(input$user_opts) == 1) {
         n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-        n_base$chart(color = unique(monthly$hex))
+        n_base$chart(color = unique(monthly$hex), showControls = FALSE)
         yTicks <- "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { if (d !== 0) {return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100)} else {return 0}; }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
         n_base$yAxis(tickValues = seq(from = 1, to = max(monthly$log_count)))
       }
       else {
         n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-        n_base$chart(showLegend = FALSE)
-        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"))
+        n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
         yTicks <- "#!d3.format(',.0')!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
       }
@@ -476,7 +470,7 @@ server <- function(input, output, session) {
       }
       else {
         n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
-        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE)
+        n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showControls = FALSE, showLegend = FALSE)
         yTicks <- "#!d3.format(',.0')!#"
         tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + d3.format(',.0')(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
       }
@@ -645,9 +639,4 @@ server <- function(input, output, session) {
 
   })
 
-  # conditional hide/show overdrive footnote
-  observeEvent(input$vars, {
-    toggle(id = "od_foot", condition = input$vars == "overdrive_trans")
-  })
-# })
 }
