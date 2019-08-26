@@ -21,6 +21,8 @@ ui <- dashboardPage(title="Digital dashboard",
                                                               ,menuItem("NYPL.org", tabName = "web", icon = icon("newspaper"))
                                                               ,menuItem("Catalog Users", tabName = "users", icon = icon("users"))
                                                               ,menuItem("Catalog Page Views", tabName = "views", icon = icon("eye"))
+                                                              ,br(), br(), br()
+                                                              ,downloadButton('downloadData', 'Download csv', class= "dl_btn", style="margin-left: 30px")
                     )),
                     dashboardBody(
                       useShinyjs(),
@@ -30,6 +32,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                  ".shiny-output-error { visibility: hidden; }",
                                  ".shiny-output-error:before { visibility: hidden; }",
                                  ".nvd3 .nv-axis.nv-y text { font-size: 14px; }",
+                                 ".dl_btn { background-color: #35978f !important; color: #000000 !important; }",
                                  "#link_to_cards:hover, #link_to_Vweb:hover, #link_to_Uweb:hover { opacity:0.5; }",
                                  ".small-box.bg-black { background-color: #35978f !important; color: #000000 !important; }",
                                  ".small-box.bg-red { background-color: #80cdc1 !important; color: #000000 !important; }",

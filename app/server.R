@@ -10,6 +10,18 @@ server <- function(input, output, session) {
   
   latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
+  ### DATA DL ###
+  out_df <- df %>% rename(date = date_dash, 
+                          search_requests_encore_page_views = search_requestsencore__page_views,
+                          search_requests_encore_users = search_requests_encore__users)
+  output$downloadData <- downloadHandler(
+    filename = function() { 
+      paste("DailyDigitalData_", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write_csv(out_df, file)
+    })
+  
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderUI({
     HTML(paste0("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 - ", format(max(df$date_dash), "%B %d, %Y"),")"))

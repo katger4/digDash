@@ -16,6 +16,15 @@ library(packcircles)
 library(plotly)
 library(rCharts)
 
+# to setup googlesheet auth (comment out once done)
+# options(httr_oob_default=TRUE) 
+# shiny_token <- gs_auth(new_user = TRUE, cache=FALSE)
+# saveRDS(shiny_token, "shiny_app_token.rds")
+# file.info("shiny_app_token.rds")
+
+# googlesheets::gs_auth(token = "shiny_app_token.rds")
+# df_ss <- gs_title("data_drop")
+
 circ_choices <- c("Sierra"="sierra_trans",
                  "Overdrive" = "overdrive_trans",
                  "CloudLibrary" = "cloud_trans")
@@ -45,15 +54,6 @@ user_choices <- c("Shared catalog" = "search_requests_shared_catalog_users",
                   "Encore" = "search_requests_encore__users")
 
 time_choices <- c("Monthly","Daily","Quarterly","Weekday")
-
-# to setup googlesheet auth (comment out once done)
-# options(httr_oob_default=TRUE) 
-# shiny_token <- gs_auth(new_user = TRUE, cache=FALSE)
-# saveRDS(shiny_token, "shiny_app_token.rds")
-# file.info("shiny_app_token.rds")
-
-# googlesheets::gs_auth(token = "shiny_app_token.rds")
-# df_ss <- gs_title("data_drop")
 
 cat_color <- function(var_name) {
   var_name <- tolower(var_name)
