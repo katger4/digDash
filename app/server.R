@@ -10,18 +10,6 @@ server <- function(input, output, session) {
   
   latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
-  ### DATA DL ###
-  out_df <- df %>% rename(date = date_dash, 
-                          search_requests_encore_page_views = search_requestsencore__page_views,
-                          search_requests_encore_users = search_requests_encore__users)
-  output$downloadData <- downloadHandler(
-    filename = function() { 
-      paste("DailyDigitalData_", Sys.Date(), ".csv", sep="")
-    },
-    content = function(file) {
-      write_csv(out_df, file)
-    })
-  
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderUI({
     HTML(paste0("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 - ", format(max(df$date_dash), "%B %d, %Y"),")"))
@@ -76,6 +64,44 @@ server <- function(input, output, session) {
       filter(user_type %in% input$web_opts)
     }
   })
+  
+  ### DATA DL ###
+  out_ov <- df %>% rename(date = date_dash, 
+                          search_requests_encore_page_views = search_requestsencore__page_views,
+                          search_requests_encore_users = search_requests_encore__users)
+  out_var <- reactive({
+    switch(input$sidebar_menu, 
+           "overview" = out_ov, 
+           "cards" = prep_data(df, card=TRUE) %>% rename(new_card_sign_ups = count), 
+           "transactions" = circ_var(), 
+           "web" = web_var(),
+           "users" = user_var(),
+           "views" = views_var())
+  })
+  
+  out_df <- reactive({
+    out_var() %>% 
+      rename_all(recode, date_dash = "date", 
+                 user_type = "var_type",
+                 transaction_type = "var_type",
+                 s_month = "month",
+                 s_year = "year",
+                 f_year = "fiscal_year",
+                 f_quarter = "fiscal_quarter",
+                 s_weekday = "weekday") %>%
+      mutate_if(is.character, str_replace_all, pattern = 'search_requestsencore__page_views', replacement = 'search_requests_encore_page_views') %>%
+      mutate_if(is.character, str_replace_all, pattern = 'search_requests_encore__users', replacement = 'search_requests_encore_users') %>%
+      select(-matches("s_date|f_month"))
+  })
+  
+  output$downloadData <- downloadHandler(
+    filename = function() { 
+      paste("DailyDigitalData_", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write_csv(out_df(), file)
+    })
+  
   
   ### VALUE BOXES ###
   output$card_tot <- output$card_tot_tab <- renderValueBox({
@@ -134,7 +160,7 @@ server <- function(input, output, session) {
 
   output$views_tot <- output$views_tot_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_users", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog page views</span>"))
+      text <- actionLink("link_to_views", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog page views</span>"))
     }
     else{
       text <- HTML(paste("Total catalog page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))}
@@ -150,7 +176,7 @@ server <- function(input, output, session) {
   
   output$users_tot <- output$users_tot_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
-      text <- actionLink("link_to_views", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog users</span>"))
+      text <- actionLink("link_to_users", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog users</span>"))
     }
     else {
       text <- HTML(paste("Total catalog users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
@@ -700,13 +726,13 @@ server <- function(input, output, session) {
       if (!length(unique(circ_var()$transaction_type)) == 1) {
         n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
         n_base$chart(color = unique(monthly$hex))
+        tt <- "#! function(key, x, y, e){ return '<p><b>' + key + '</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       }
       else {
         n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
         n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
+        tt <- paste0("#! function(key, x, y, e){ return '<p><b>",unique(monthly$transaction_type),"</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#")
       }
-
-      tt <- "#! function(key, x, y, e){ return '<p><b>' + key + '</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
       return(n)
 
@@ -719,13 +745,14 @@ server <- function(input, output, session) {
       n_base <- nPlot(count ~ s_date, group = "transaction_type", data = daily, type = "lineChart", width = session$clientData[["output_Tplot_for_size_width"]])
       if (!length(unique(circ_var()$transaction_type)) == 1) {
         n_base$chart(color = unique(daily$hex))
+        tt <- "#! function(key, x, y){ return '<p><b>' + key + '</b></p><p>' + y + ' on ' + x + '</p>'} !#"
       }
       else {
         n_base$chart(color = paste("#! function(d){ return '",unique(daily$hex),"'} !#"), showLegend = FALSE)
+        tt <- paste0("#! function(key, x, y){ return '<p><b>",unique(daily$transaction_type),"</b></p><p>' + y + ' on ' + x + '</p>'} !#")
       }
 
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
-      tt <- "#! function(key, x, y){ return '<p><b>' + key + '</b></p><p>' + y + ' on ' + x + '</p>'} !#"
       n <- format_nPlot(n_base, list(left = 100, right = 100), "#!d3.format(',.0')!#", xFormat,"trans_plot", tt)
       return(n)
     }
@@ -740,13 +767,36 @@ server <- function(input, output, session) {
       if (!length(unique(circ_var()$transaction_type)) == 1) {
         n_base <- nPlot(count ~ f_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
         n_base$chart(color = unique(quarterly$hex))
+        tt <- "#! function(key, x, y, e){ return '<p><b>' + key + '</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
       }
       else {
         n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
         n_base$chart(color = paste("#! function(d){ return '",unique(quarterly$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
+        tt <- paste0("#! function(key, x, y, e){ return '<p><b>",unique(quarterly$transaction_type),"</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#")
       }
-      tt <- "#! function(key, x, y, e){ return '<p><b>' + key + '</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
       n <- format_nPlot(n_base,margin = list(left = 100),ytickFormat = "#!d3.format(',.0')!#",plotID = "trans_plot",tooltip = tt)
+      return(n)
+    }
+    else if (input$Ttime_var == "Weekday") {
+      wk_daily <- circ_var() %>%
+        group_by(transaction_type, s_weekday) %>%
+        summarise(count = sum(count)) %>%
+        ungroup() %>%
+        mutate(transaction_type = var_to_label(transaction_type),
+               hex = trans_shade(transaction_type)) %>%
+        arrange(s_weekday, count)
+
+      if (!length(unique(circ_var()$transaction_type)) == 1) {
+        n_base <- nPlot(count ~ s_weekday, data = wk_daily, group = "transaction_type", type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+        n_base$chart(color = unique(wk_daily$hex))
+        tt <- "#! function(key, x, y, e){ return '<p><b>' + key + '</b></p><p>' + d3.format(',.0')(e.value) + ' on ' + x + 's</p>'} !#"
+      }
+      else {
+        n_base <- nPlot(count ~ s_weekday, data = wk_daily, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
+        n_base$chart(color = paste("#! function(d){ return '",unique(wk_daily$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
+        tt <- paste0("#! function(key, x, y, e){ return '<p><b>",unique(wk_daily$transaction_type),"</b></p><p>' + d3.format(',.0')(e.value) + ' on ' + x + 's</p>'} !#")
+      }
+      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
       return(n)
     }
 
