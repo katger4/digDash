@@ -22,8 +22,8 @@ library(rCharts)
 # saveRDS(shiny_token, "shiny_app_token.rds")
 # file.info("shiny_app_token.rds")
 
-# googlesheets::gs_auth(token = "shiny_app_token.rds")
-# df_ss <- gs_title("data_drop")
+googlesheets::gs_auth(token = "shiny_app_token.rds")
+df_ss <- gs_title("data_drop")
 
 circ_choices <- c("Sierra"="sierra_trans",
                  "Overdrive" = "overdrive_trans",
@@ -169,6 +169,43 @@ prep_data <- function(df, key, users, views, trans_name, trans_sum, card, web, c
     arrange(s_date)
 }
 
+prep_bars <- function(df, users, views, circ, card, web, group_var, time_var) {
+  if (!missing(card)) {
+    monthly <- prep_data(df, card=TRUE) %>%
+      group_by(!!as.name(time_var)) %>%
+      summarise(count = sum(count))
+  } 
+  else {
+    grouped <- df %>% 
+      group_by(!!as.name(group_var), !!as.name(time_var)) %>%
+      summarise(count = sum(count)) %>%
+      ungroup()
+    if (!missing(users) | !missing(views)) {
+      monthly <- grouped %>% 
+        mutate(user_lab = tool_label(var_to_label(user_type)),
+               hex = cat_color(user_type),
+               log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
+        arrange(!!as.name(time_var), count)
+    } 
+    # if (!missing(views)) {
+    #   selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
+    # } 
+    # if (!missing(trans_name)) {
+    #   selected <- df %>%
+    #     select(-overdrive_ebook_holds,-overdrive_audiobook_holds) %>% 
+    #     select(starts_with(trans_name), -ends_with("users"), date_dash) 
+    # }
+    # if (!missing(trans_sum)) {
+    #   selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash) %>%
+    #     select(-overdrive_ebook_holds,-overdrive_audiobook_holds)
+    # }
+    # 
+    # if (!missing(web)) {
+    #   selected <- df %>% select(contains("website"), date_dash)
+    # }
+  } 
+}
+
 format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, tooltip) {
   n_base$chart(margin = margin)
   n_base$yAxis(tickFormat = ytickFormat)
@@ -179,34 +216,3 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
-# # 
-# view_sum <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
-#   group_by(user_type, s_year) %>%
-#   summarise(tot = sum(count)) %>%
-#   ungroup() %>%
-#   mutate(user_type = var_to_label(user_type),
-#          user_lab = tool_label(user_type),
-#          hex = cat_color(user_lab))
-# # 
-# # u <- prep_data(df, key = "user_type", cat="catalog", users = TRUE)
-# # 
-# monthly <- prep_data(df, key = "user_type", cat = "catalog", views = TRUE) %>%
-#   group_by(user_type, s_month) %>%
-#   summarise(count = sum(count)) %>%
-#   ungroup() %>%
-#   mutate(user_type = var_to_label(user_type),
-#          user_lab = tool_label(user_type),
-#          hex = cat_color(user_type),
-#          log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
-#   filter(!is.na(log_count))
-# n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart")
-# n_base$yAxis(tickValues = c(1,2,3,4,5,6)
-#              ,tickFormat = "#!function (d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100);}!#")
-# # n_base$yAxis(tickFormat = "#!d3.format(',.0')!#")
-# 
-# tt <- "#! function(key, x, y, e){ return '<p><strong>' + key + '</strong></p><p>' + function(d) { return d3.format(',.0')(Math.round(100*Math.pow(10,d))/100); }(e.value) + ' users in ' + x + ' 2019 </p>'} !#"
-# n_base$chart(tooltipContent = tt)
-# n_base
-# n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "users_plot", tooltip = tt)
-# # n$chart(color = unique(monthly$hex))
-# # n

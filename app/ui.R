@@ -58,9 +58,11 @@ ui <- dashboardPage(title="Digital dashboard",
                                                  ,fluidRow(valueBoxOutput("views_tot", width = 12))
                                 )
                                 ,column(width = 4
-                                        ,box(uiOutput("circ_tot")
+                                        ,box(
+                                          # uiOutput("circ_tot")
+                                          valueBoxOutput("circ_home_vb", width = NULL)
                                              ,width = NULL
-                                             ,plotlyOutput(outputId = "trans_plot_sum", height = "350px") %>% withSpinner(color="#0dc5c1")
+                                             ,plotlyOutput(outputId = "trans_plot_sum", height = "170px") %>% withSpinner(color="#0dc5c1")
                                         )
                                 )
                                 ,column(width = 4
@@ -137,24 +139,23 @@ ui <- dashboardPage(title="Digital dashboard",
                         ),
                         tabItem(tabName = "transactions"
                                 ,fluidRow(column(width=4),column(width=4,valueBoxOutput("tot", width = NULL)),column(width=4))
-                                ,fluidRow(width = 12
-                                          ,valueBoxOutput("t1",width = 3)
-                                          ,valueBoxOutput("t2",width = 3)
-                                          ,valueBoxOutput("t3",width = 3)
-                                          ,valueBoxOutput("t4",width = 3))
+                                ,conditionalPanel("input.circ_vars === 'sierra_trans'"
+                                                  ,fluidRow(width = 12,column(width=1),valueBoxOutput("s1",width = 3),valueBoxOutput("s2",width = 3),valueBoxOutput("s3",width = 3),column(width=2)))
+                                ,conditionalPanel("input.circ_vars === 'overdrive_trans'"
+                                                  ,fluidRow(width = 12,column(width=2),valueBoxOutput("o1",width = 4),valueBoxOutput("o2",width = 4),column(width=2)))
+                                ,conditionalPanel("input.circ_vars === 'cloud_trans'"
+                                                  ,fluidRow(width = 12,valueBoxOutput("c1",width = 3),valueBoxOutput("c2",width = 3),valueBoxOutput("c3",width = 3),valueBoxOutput("c4",width = 3)))
                                 ,fluidRow(
                                   column(width = 9
                                          ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "trans_plot", "nvd3"),plotOutput("Tplot_for_size", height = "1px")))
                                   )
                                   ,column(width = 3
                                           ,fluidRow(box(width=NULL
-                                                        ,radioButtons(inputId = "circ_vars", label = "Circulation System", choices = circ_choices,
-                                                                      selected = "sierra_trans")
+                                                        ,radioButtons(inputId = "circ_vars", label = "Circulation System", choices = circ_choices, selected = "sierra_trans")
                                                         ,conditionalPanel("input.circ_vars === 'sierra_trans'", checkboxGroupInput("sierra_opts", "Variable", choices = sierra_choices, selected = sierra_choices))
                                                         ,conditionalPanel("input.circ_vars === 'overdrive_trans'", checkboxGroupInput("odrive_opts", "Variable", choices = odrive_choices, selected = odrive_choices))
                                                         ,conditionalPanel("input.circ_vars === 'cloud_trans'", checkboxGroupInput("cloud_opts", "Variable", choices = cloud_choices, selected = cloud_choices))
-                                                        ,radioButtons(inputId = "Ttime_var", label = "Time", choices = time_choices,
-                                                                      selected = "Monthly")))
+                                                        ,radioButtons(inputId = "Ttime_var", label = "Time", choices = time_choices, selected = "Monthly")))
                                   ) # trans controls col
                                 ) # trans row
                         ) # trans tab

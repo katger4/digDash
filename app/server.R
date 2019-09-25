@@ -1,12 +1,12 @@
 server <- function(input, output, session) {
 
-  # df <- df_ss %>%
-  #   gs_read_csv(ws = 1) %>%
-  #   drop_na() %>%
-  #   filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
+  df <- df_ss %>%
+    gs_read_csv(ws = 1) %>%
+    drop_na() %>%
+    filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
   
   # saveRDS(df, './app/jul.rds')
-  df <- readRDS('./data/jun31.rds')
+  # df <- readRDS('./data/jun31.rds')
   
   latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
   
@@ -14,14 +14,6 @@ server <- function(input, output, session) {
   output$latest_day_str <- renderUI({
     HTML(paste0("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 - ", format(max(df$date_dash), "%B %d, %Y"),")"))
     })
-  
-  output$circ_tot <- renderUI({
-    actionLink("link_to_circ", HTML(paste("<span style='font-size:26px'><b>",comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))),"</b>circulation activity*</span>")))
-  })
-  
-  observeEvent(input$link_to_circ, {
-    updateTabItems(session, "sidebar_menu", "transactions")
-  })
   
   output$log_views <- renderUI({
     if (!length(input$view_opts) == 1) {
@@ -101,9 +93,35 @@ server <- function(input, output, session) {
     content = function(file) {
       write_csv(out_df(), file)
     })
-  
+  # cards <- prep_bars(df, card = TRUE, time_var = "s_month")
+  plot_var <- reactive({
+    switch(input$sidebar_menu, 
+           "cards" = prep_data(df, card=TRUE), 
+           "transactions" = circ_var(), 
+           "web" = web_var(),
+           "users" = user_var(),
+           "views" = views_var())
+  })
+  m <- reactive({
+    prep_bars(plot_var(), users = TRUE, group_var = "user_type", time_var = "s_month")
+    # m <- prep_bars(plot_var(), card = TRUE, time_var = "s_month")
+    print(head(m))
+    return(m)
+    })
   
   ### VALUE BOXES ###
+  output$circ_home_vb <- renderValueBox({
+    text <- actionLink("link_to_circ", HTML("<span style='font-size:20px; color:#dbdbdb;'>Circulation activity*</span>"))
+    valueBox(
+      comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))), text, icon = icon("exchange"),
+      color = "olive"
+    )
+  })
+  
+  observeEvent(input$link_to_circ, {
+    updateTabItems(session, "sidebar_menu", "transactions")
+  })
+  
   output$card_tot <- output$card_tot_tab <- renderValueBox({
     if (input$sidebar_menu == "overview") {
       text <- actionLink("link_to_cards", HTML("<span style='font-size:32px; color:#dbdbdb;'>New card sign ups</span>"))
@@ -165,7 +183,7 @@ server <- function(input, output, session) {
     else{
       text <- HTML(paste("Total catalog page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))}
     valueBox(
-      comma_format()(sum(views_var()$count)), text, icon = icon("eye"),
+      comma_format()(sum(prep_data(df, key = "user_type", views = TRUE)$count)), text, icon = icon("eye"),
       color = "light-blue"
     )
   })
@@ -182,7 +200,7 @@ server <- function(input, output, session) {
       text <- HTML(paste("Total catalog users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
       }
     valueBox(
-      comma_format()(sum(user_var()$count)), text, icon = icon("users"),
+      comma_format()(sum(prep_data(df, "user_type", users = TRUE)$count)), text, icon = icon("users"),
       color = "light-blue"
     )
   })
@@ -278,13 +296,16 @@ server <- function(input, output, session) {
     v <- switch(input$circ_vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary')
     color <- switch(input$circ_vars, "sierra_trans" = 'red', "overdrive_trans" = 'yellow', "cloud_trans" = 'aqua')
     text <- HTML(paste("Total", v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+    circ_var_total <- switch(input$circ_vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), 
+                             "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), 
+                             "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
     valueBox(
-      comma_format()(sum(circ_var()$count)), text, icon = icon("exchange"),
+      comma_format()(sum(circ_var_total$count)), text, icon = icon("exchange"),
       color = color
     )
   })
 
-  output$t1 <- renderValueBox({
+  output$c1 <- output$s1 <- output$o1 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_checkins', "overdrive_trans" = 'overdrive_audiobook_checkouts', "cloud_trans" = 'cloudlibrary_audiobook_checkouts')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
       text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
@@ -295,7 +316,7 @@ server <- function(input, output, session) {
       )}
   })
 
-  output$t2 <- renderValueBox({
+  output$c2 <- output$s2 <- output$o2 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_checkouts', "overdrive_trans" = 'overdrive_ebook_checkouts', "cloud_trans" = 'cloudlibrary_audiobook_holds')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
       text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
@@ -305,7 +326,7 @@ server <- function(input, output, session) {
         color = "navy")}
   })
 
-  output$t3 <- renderValueBox({
+  output$c3 <- output$s3 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_renewals', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_ebook_checkouts')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
       icon <- switch(input$circ_vars, "sierra_trans" = icon("bookmark"), "cloud_trans" = icon("book-open"))
@@ -317,7 +338,7 @@ server <- function(input, output, session) {
         )}}
   })
 
-  output$t4 <- renderValueBox({
+  output$c4 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = '', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_ebook_holds')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
       text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
