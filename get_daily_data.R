@@ -28,6 +28,8 @@ dddd <- gs_title("Daily Digital DATA DROP ")
 active_sheet_name <- gs_ws_ls(dddd)[[1]]
 
 today_day <- day(as_date(today()))
+# august data INCOMPLETE as of 9/6/2019
+# today_day <- 31
 
 today_range <- today_day+2
 
@@ -48,6 +50,7 @@ today_data <- dddd %>%
 
 # create new sheet
 gs_ws_new(baseline_bk, paste0(as.character(today()),'_',as.character(hour(now()))), input = today_data)
+# gs_ws_new(baseline_bk, paste0(as.character(today()),'_',as.character(hour(now())),'_3'), input = today_data)
 # delete old sheet
 gs_ws_delete(baseline_bk, ws = 1)
 
