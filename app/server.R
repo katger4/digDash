@@ -17,13 +17,13 @@ server <- function(input, output, session) {
   
   output$log_views <- renderUI({
     if (!length(input$view_opts) == 1) {
-      HTML("<span style='color: gray; font-size: 12px; font-family: Monospace;'><b>Note:</b> This plot uses a <a href='https://en.wikipedia.org/wiki/Logarithmic_scale'>log scale</a>. Each axis tick corresponds to a <i>ten-fold</i> increase in page views.</span>")
+      HTML("<span style='color: gray; font-size: 12px; font-family: Monospace;'><b>Note:</b> This plot uses a <a href='https://en.wikipedia.org/wiki/Logarithmic_scale'>log scale</a> due to the wide range in page views across platforms. Each axis tick corresponds to a <i>ten-fold</i> increase in page views.</span>")
     }
   })
   
   output$log_users <- renderUI({
     if (!length(input$user_opts) == 1) {
-      HTML("<span style='color: gray; font-size: 12px; font-family: Monospace;'><b>Note:</b> This plot uses a <a href='https://en.wikipedia.org/wiki/Logarithmic_scale'>log scale</a>. Each axis tick corresponds to a <i>ten-fold</i> increase in users.</span>")
+      HTML("<span style='color: gray; font-size: 12px; font-family: Monospace;'><b>Note:</b> This plot uses a <a href='https://en.wikipedia.org/wiki/Logarithmic_scale'>log scale</a> due to the wide range in users across platforms. Each axis tick corresponds to a <i>ten-fold</i> increase in users.</span>")
     }
   })
   
@@ -754,7 +754,7 @@ server <- function(input, output, session) {
         n_base$chart(color = paste("#! function(d){ return '",unique(monthly$hex),"'} !#"), showLegend = FALSE, showControls = FALSE)
         tt <- paste0("#! function(key, x, y, e){ return '<p><b>",unique(monthly$transaction_type),"</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#")
       }
-      n <- format_nPlot(n_base, list(left = 100), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
+      n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#", plotID = "trans_plot", tooltip = tt)
       return(n)
 
     }
