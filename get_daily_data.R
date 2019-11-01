@@ -26,12 +26,21 @@ clean_df <- function(df, ws_year) {
 dddd <- gs_title("Daily Digital DATA DROP ")
 
 active_sheet_name <- gs_ws_ls(dddd)[[1]]
+mon <- str_split(active_sheet_name, " ")[[1]][1]
 
-today_day <- day(as_date(today()))
-# august data INCOMPLETE as of 9/6/2019
-# today_day <- 31
+if (match(mon, month.name)) {
+  active_month <- match(mon, month.name)
+} else if (match(mon, month.abb)) {
+  active_month <- match(mon, month.abb)
+} else { active_month <- ''}
 
-today_range <- today_day+2
+if (active_month == month(as_date(today()))) {
+  today_day <- day(as_date(today()))
+  today_range <- today_day+2
+} else { 
+  max_days <- days_in_month(as.Date(paste0(str_split(active_sheet_name, " ")[[1]][2],'-',active_month,'-01')))
+  today_range <- unname(max_days)+2
+    }
 
 # baseline <- readRDS("./app/data/today_data.rds")
 baseline_bk <- gs_title("data_drop")
@@ -54,5 +63,5 @@ gs_ws_new(baseline_bk, paste0(as.character(today()),'_',as.character(hour(now())
 # delete old sheet
 gs_ws_delete(baseline_bk, ws = 1)
 
-# saveRDS(today_data, file = "./app/data/today_data.rds")
+saveRDS(today_data, file = paste0("./app/data/",as.character(today()),'_',as.character(hour(now())),".rds"))
 # write_csv(today_data, "./app/data/today_data.csv")
