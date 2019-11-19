@@ -1,6 +1,6 @@
 library(tidyverse)
 library(lubridate)
-# library(googledrive)
+library(googledrive)
 library(googlesheets)
 
 setwd("/Users/katgertz/Desktop/digDash/")
@@ -58,10 +58,8 @@ today_data <- dddd %>%
   ungroup()
 
 # create new sheet
-gs_ws_new(baseline_bk, paste0(as.character(today()),'_',as.character(hour(now()))), input = today_data)
-# gs_ws_new(baseline_bk, paste0(as.character(today()),'_',as.character(hour(now())),'_3'), input = today_data)
-# delete old sheet
-gs_ws_delete(baseline_bk, ws = 1)
+drive_auth(email = readRDS("email.rds"))
+write_csv(today_data, "./app/data/today_data.csv")
+ss <- drive_get(id = readRDS("key.rds")) 
+drive_update(ss, "./app/data/today_data.csv")
 
-saveRDS(today_data, file = paste0("./app/data/",as.character(today()),'_',as.character(hour(now())),".rds"))
-# write_csv(today_data, "./app/data/today_data.csv")
