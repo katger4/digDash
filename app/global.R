@@ -16,6 +16,8 @@ library(packcircles)
 library(plotly)
 library(rCharts)
 
+source("year_toggle.R")
+
 # to setup googlesheet auth (comment out once done)
 # options(httr_oob_default=TRUE) 
 # shiny_token <- gs_auth(new_user = TRUE, cache=FALSE)

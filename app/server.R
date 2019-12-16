@@ -1,18 +1,48 @@
 server <- function(input, output, session) {
 
+  ### READ DATA ###
   df <- df_ss %>%
     gs_read_csv(ws = 1) %>%
     drop_na() %>%
-    filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0))
+    filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0)) %>%
+    mutate(s_month = month(date_dash, label = TRUE),
+           s_date = create_d3_date(date_dash),
+           s_year = year(date_dash),
+           f_month = create_fy_month(date_dash),
+           f_year = create_fy_year(date_dash),
+           f_quarter = create_fy_qtr(date_dash, f_year),
+           s_weekday = factor(weekdays(date_dash), levels = c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), ordered = TRUE)
+    )
   
-  # saveRDS(df, './app/jul.rds')
-  # df <- readRDS('./data/jun31.rds')
+  ### FILTER & SORT DATA ###
+  which_year <- yearToggle("yt")
+  df_YT <- reactive({
+    if(str_detect(which_year(), "FY")){
+      df %>% filter(f_year == which_year())
+    } else { 
+      df %>% filter(year(date_dash) == which_year())
+    }
+  })
   
-  latest_month_abbr <- paste(month(max(df$date_dash), label = TRUE), year(max(df$date_dash))) 
+  # get max and min dates
+  max_d <- reactive({
+    format(max(df_YT()$date_dash), "%B %d, %Y")
+  })
+  
+  min_d <- reactive({
+    format(min(df_YT()$date_dash), "%B %d, %Y")
+  })
+  
+  # latest month (for valueboxes)
+  latest_month_abbr <- reactive({paste(month(max(df_YT()$date_dash), label = TRUE), year(max(df_YT()$date_dash)))})
   
   ### OVERVIEW TEXT ###
   output$latest_day_str <- renderUI({
-    HTML(paste0("<b>Daily Digital Data Drop dashboard</b>: calendar year-to-date (January 1, 2019 - ", format(max(df$date_dash), "%B %d, %Y"),")"))
+    year_type <- if(str_detect(which_year(), "FY")){"fiscal year"} else {"calendar year"}
+    to_date <- if(str_detect(which_year(), "FY") & which_year() == max(fis_opts)){paste0(" ",str_replace(which_year(), "FY", ""),"-to-date")} 
+                else if(!str_detect(which_year(), "FY") & which_year() == max(cal_opts)){"-to-date"} 
+                else {paste0(" ",str_replace(which_year(), "FY", ""))}
+    HTML(paste0("<b>Daily Digital Data Drop dashboard</b>: ",year_type,to_date," (",min_d()," - ", max_d(),")"))
     })
   
   output$log_views <- renderUI({
@@ -31,68 +61,32 @@ server <- function(input, output, session) {
   ### Vars ###
   circ_var <- reactive({
       switch(input$circ_vars, 
-             "sierra_trans" = if (!is.null(input$sierra_opts)) {prep_data(df, "transaction_type", trans_name= "sierra") %>% filter(transaction_type %in% input$sierra_opts)}, 
-             "overdrive_trans" = if (!is.null(input$odrive_opts)) {prep_data(df, "transaction_type", trans_name= "overdrive") %>% filter(transaction_type %in% input$odrive_opts)}, 
-             "cloud_trans" = if (!is.null(input$cloud_opts)) {prep_data(df, "transaction_type", trans_name= "cloudlibrary") %>% filter(transaction_type %in% input$cloud_opts)})
+             "sierra_trans" = if (!is.null(input$sierra_opts)) {prep_data(df_YT(), "transaction_type", trans_name= "sierra") %>% filter(transaction_type %in% input$sierra_opts)}, 
+             "overdrive_trans" = if (!is.null(input$odrive_opts)) {prep_data(df_YT(), "transaction_type", trans_name= "overdrive") %>% filter(transaction_type %in% input$odrive_opts)}, 
+             "cloud_trans" = if (!is.null(input$cloud_opts)) {prep_data(df_YT(), "transaction_type", trans_name= "cloudlibrary") %>% filter(transaction_type %in% input$cloud_opts)})
   })
   
   user_var <- reactive({
     if (!is.null(input$user_opts)) {
-      prep_data(df, "user_type", users = TRUE) %>% 
+      prep_data(df_YT(), "user_type", users = TRUE) %>% 
         filter(user_type %in% input$user_opts)
     }
   })
 
   views_var <- reactive({
     if (!is.null(input$view_opts)) {
-      prep_data(df, key = "user_type", views = TRUE) %>% 
+      prep_data(df_YT(), key = "user_type", views = TRUE) %>% 
         filter(user_type %in% input$view_opts)
     }
   })
   
   web_var <- reactive({
     if (!is.null(input$web_opts)) {
-    prep_data(df, key = "user_type", web = TRUE) %>% 
+    prep_data(df_YT(), key = "user_type", web = TRUE) %>% 
       filter(user_type %in% input$web_opts)
     }
   })
   
-  ### DATA DL ###
-  out_ov <- df %>% rename(date = date_dash, 
-                          search_requests_encore_page_views = search_requestsencore__page_views,
-                          search_requests_encore_users = search_requests_encore__users)
-  out_var <- reactive({
-    switch(input$sidebar_menu, 
-           "overview" = out_ov, 
-           "cards" = prep_data(df, card=TRUE) %>% rename(new_card_sign_ups = count), 
-           "transactions" = circ_var(), 
-           "web" = web_var(),
-           "users" = user_var(),
-           "views" = views_var())
-  })
-  
-  out_df <- reactive({
-    out_var() %>% 
-      rename_all(recode, date_dash = "date", 
-                 user_type = "var_type",
-                 transaction_type = "var_type",
-                 s_month = "month",
-                 s_year = "year",
-                 f_year = "fiscal_year",
-                 f_quarter = "fiscal_quarter",
-                 s_weekday = "weekday") %>%
-      mutate_if(is.character, str_replace_all, pattern = 'search_requestsencore__page_views', replacement = 'search_requests_encore_page_views') %>%
-      mutate_if(is.character, str_replace_all, pattern = 'search_requests_encore__users', replacement = 'search_requests_encore_users') %>%
-      select(-matches("s_date|f_month"))
-  })
-  
-  output$downloadData <- downloadHandler(
-    filename = function() { 
-      paste("DailyDigitalData_", Sys.Date(), ".csv", sep="")
-    },
-    content = function(file) {
-      write_csv(out_df(), file)
-    })
   # cards <- prep_bars(df, card = TRUE, time_var = "s_month")
   plot_var <- reactive({
     switch(input$sidebar_menu, 
@@ -113,7 +107,7 @@ server <- function(input, output, session) {
   output$circ_home_vb <- renderValueBox({
     text <- actionLink("link_to_circ", HTML("<span style='font-size:20px; color:#dbdbdb;'>Circulation activity*</span>"))
     valueBox(
-      comma_format()(sum(df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))), text, icon = icon("exchange"),
+      comma_format()(sum(df_YT() %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users")))), text, icon = icon("exchange"),
       color = "olive"
     )
   })
@@ -127,11 +121,11 @@ server <- function(input, output, session) {
       text <- actionLink("link_to_cards", HTML("<span style='font-size:32px; color:#dbdbdb;'>New card sign ups</span>"))
     }
     else {
-      text <- HTML(paste("New card sign ups",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste("New card sign ups",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
     }
 
     valueBox(
-      comma_format()(sum(df %>% select(new_card_sign_ups))), text, icon = icon("id-card"),
+      comma_format()(sum(df_YT() %>% select(new_card_sign_ups))), text, icon = icon("id-card"),
       color = "blue"
     )
   })
@@ -145,11 +139,11 @@ server <- function(input, output, session) {
       text <- actionLink("link_to_Vweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>NYPL.org page views</span>"))
     }
     else if (any(grepl('view', input$web_opts))) {
-      text <- HTML(paste("NYPL.org page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste("NYPL.org page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
     }
     
     valueBox(
-      comma_format()(sum(df %>% select(intersect(ends_with("views"), contains("website"))))), text, icon = icon("search"),
+      comma_format()(sum(df_YT() %>% select("website_visits_page_views"))), text, icon = icon("search"),
       color = "black"
     )
   })
@@ -163,11 +157,11 @@ server <- function(input, output, session) {
       text <- actionLink("link_to_Uweb", HTML("<span style='font-size:20px; color:#dbdbdb;'>NYPL.org users</span>"))
     }
     else if (any(grepl('user', input$web_opts))) {
-      text <- HTML(paste("NYPL.org users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste("NYPL.org users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
     }
     
     valueBox(
-      comma_format()(sum(df %>% select(intersect(ends_with("users"), contains("website"))))), text, icon = icon("user-circle"),
+      comma_format()(sum(df_YT() %>% select("website_visits_users"))), text, icon = icon("user-circle"),
       color = "black"
     )
   })
@@ -181,9 +175,9 @@ server <- function(input, output, session) {
       text <- actionLink("link_to_views", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog page views</span>"))
     }
     else{
-      text <- HTML(paste("Total catalog page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))}
+      text <- HTML(paste("Total catalog page views",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))}
     valueBox(
-      comma_format()(sum(prep_data(df, key = "user_type", views = TRUE)$count)), text, icon = icon("eye"),
+      comma_format()(sum(prep_data(df_YT(), key = "user_type", views = TRUE)$count)), text, icon = icon("eye"),
       color = "light-blue"
     )
   })
@@ -197,10 +191,10 @@ server <- function(input, output, session) {
       text <- actionLink("link_to_users", HTML("<span style='font-size:20px; color:#dbdbdb;'>Catalog users</span>"))
     }
     else {
-      text <- HTML(paste("Total catalog users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste("Total catalog users",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       }
     valueBox(
-      comma_format()(sum(prep_data(df, "user_type", users = TRUE)$count)), text, icon = icon("users"),
+      comma_format()(sum(prep_data(df_YT(), "user_type", users = TRUE)$count)), text, icon = icon("users"),
       color = "light-blue"
     )
   })
@@ -212,7 +206,7 @@ server <- function(input, output, session) {
   output$v1 <- renderValueBox({
     if (any(grepl('shared', input$view_opts))) {
       v_type <- 'Shared catalog'
-      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       valueBox(
         comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("handshake"),
         color = "navy"
@@ -223,7 +217,7 @@ server <- function(input, output, session) {
   output$v2 <- renderValueBox({
     if (any(grepl('classic', input$view_opts))) {
     v_type <- 'Classic catalog'
-      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       valueBox(
         comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("glasses"),
         color = "navy"
@@ -234,7 +228,7 @@ server <- function(input, output, session) {
   output$v3 <- renderValueBox({
     if (any(grepl('encore', input$view_opts))) {
       v_type <- 'Encore'
-      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), "page views", br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       valueBox(
         comma_format()(sum(views_var() %>% filter(tool_label(var_to_label(user_type)) == v_type) %$% count)), text, icon = icon("retweet"),
         color = "navy"
@@ -295,10 +289,10 @@ server <- function(input, output, session) {
   output$tot <- renderValueBox({
     v <- switch(input$circ_vars, "sierra_trans" = 'Sierra', "overdrive_trans" = 'Overdrive', "cloud_trans" = 'CloudLibrary')
     color <- switch(input$circ_vars, "sierra_trans" = 'red', "overdrive_trans" = 'yellow', "cloud_trans" = 'aqua')
-    text <- HTML(paste("Total", v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
-    circ_var_total <- switch(input$circ_vars, "sierra_trans" = prep_data(df, "transaction_type", trans_name= "sierra"), 
-                             "overdrive_trans" = prep_data(df, "transaction_type", trans_name= "overdrive"), 
-                             "cloud_trans" = prep_data(df, "transaction_type", trans_name= "cloudlibrary"))
+    text <- HTML(paste("Total", v, "circulation activity",br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
+    circ_var_total <- switch(input$circ_vars, "sierra_trans" = prep_data(df_YT(), "transaction_type", trans_name= "sierra"), 
+                             "overdrive_trans" = prep_data(df_YT(), "transaction_type", trans_name= "overdrive"), 
+                             "cloud_trans" = prep_data(df_YT(), "transaction_type", trans_name= "cloudlibrary"))
     valueBox(
       comma_format()(sum(circ_var_total$count)), text, icon = icon("exchange"),
       color = color
@@ -308,7 +302,7 @@ server <- function(input, output, session) {
   output$c1 <- output$s1 <- output$o1 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_checkins', "overdrive_trans" = 'overdrive_audiobook_checkouts', "cloud_trans" = 'cloudlibrary_audiobook_checkouts')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
-      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       icon <- switch(input$circ_vars, "sierra_trans" = icon("book"), "overdrive_trans" = icon("headphones"), "cloud_trans" = icon("headphones"))
       valueBox(
         comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
@@ -319,7 +313,7 @@ server <- function(input, output, session) {
   output$c2 <- output$s2 <- output$o2 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = 'sierra_checkouts', "overdrive_trans" = 'overdrive_ebook_checkouts', "cloud_trans" = 'cloudlibrary_audiobook_holds')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
-      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       icon <- switch(input$circ_vars, "sierra_trans" = icon("book-open"), "overdrive_trans" = icon("book-open"), "cloud_trans" = icon("pause-circle"))
       valueBox(
         comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
@@ -331,7 +325,7 @@ server <- function(input, output, session) {
     if (any(grepl(v_type, circ_var()$transaction_type))) {
       icon <- switch(input$circ_vars, "sierra_trans" = icon("bookmark"), "cloud_trans" = icon("book-open"))
       if (!input$circ_vars %in% c("overdrive_trans")){
-        text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+        text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
         valueBox(
           comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon,
           color = "navy"
@@ -341,7 +335,7 @@ server <- function(input, output, session) {
   output$c4 <- renderValueBox({
     v_type <- switch(input$circ_vars, "sierra_trans" = '', "overdrive_trans" = '', "cloud_trans" = 'cloudlibrary_ebook_holds')
     if (any(grepl(v_type, circ_var()$transaction_type))) {
-      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr,"</span>"))
+      text <- HTML(paste(var_to_label(v_type), br(),"<span style='font-size:12px'>Jan 2019 - ",latest_month_abbr(),"</span>"))
       if (!input$circ_vars %in% c("sierra_trans","overdrive_trans")){
         valueBox(
           comma_format()(sum(circ_var() %>% filter(transaction_type == v_type) %$% count)), text, icon = icon("bookmark"),
@@ -351,7 +345,7 @@ server <- function(input, output, session) {
 
   ### PLOTS ###
   output$trans_plot_sum <- renderPlotly({
-    trans <- prep_data(df, key = "transaction_type", trans_sum = TRUE) %>%
+    trans <- prep_data(df_YT(), key = "transaction_type", trans_sum = TRUE) %>%
       mutate(transaction_group = tool_label(transaction_type),
              hex = cat_color(transaction_group)) %>%
       group_by(transaction_group, hex) %>%
@@ -602,7 +596,7 @@ server <- function(input, output, session) {
 
   output$card_plot <- renderChart({
     if (input$Ctime_var == "Monthly"){
-      monthly <- prep_data(df, card=TRUE) %>%
+      monthly <- prep_data(df_YT(), card=TRUE) %>%
         group_by(s_month) %>%
         summarise(count = sum(count))
       n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
@@ -612,7 +606,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ctime_var == "Daily") {
-      daily <- prep_data(df, card=TRUE)
+      daily <- prep_data(df_YT(), card=TRUE)
 
       n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_Cplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
@@ -622,7 +616,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ctime_var == "Quarterly") {
-      quarterly <- prep_data(df, card=TRUE) %>%
+      quarterly <- prep_data(df_YT(), card=TRUE) %>%
         group_by(f_quarter) %>%
         summarise(count = sum(count))
 
@@ -633,7 +627,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ctime_var == "Weekday") {
-      wk_daily <- prep_data(df, card=TRUE) %>%
+      wk_daily <- prep_data(df_YT(), card=TRUE) %>%
         group_by(s_weekday) %>%
         summarise(count = sum(count))
       
@@ -822,5 +816,50 @@ server <- function(input, output, session) {
     }
 
   })
+  
+  ### DATA DL ###
+  out_ov <- reactive({
+    df_YT() %>% select(-weekday) %>% 
+      rename(date = date_dash, 
+             search_requests_encore_page_views = search_requestsencore__page_views,
+             search_requests_encore_users = search_requests_encore__users)
+    })
+  
+  out_card <- reactive({
+    prep_data(df_YT(), card=TRUE) %>% rename(new_card_sign_ups = count)
+    })
+  out_var <- reactive({
+    switch(input$sidebar_menu, 
+           "overview" = out_ov(), 
+           "cards" = out_card(), 
+           "transactions" = circ_var(), 
+           "web" = web_var(),
+           "users" = user_var(),
+           "views" = views_var())
+  })
+  
+  out_df <- reactive({
+    out_var() %>% 
+      rename_all(recode, 
+                 date_dash = "date", 
+                 user_type = "var_type",
+                 transaction_type = "var_type",
+                 s_month = "month",
+                 s_year = "year",
+                 f_year = "fiscal_year",
+                 f_quarter = "fiscal_quarter",
+                 s_weekday = "weekday") %>%
+      mutate_if(is.character, str_replace_all, pattern = 'search_requestsencore__page_views', replacement = 'search_requests_encore_page_views') %>%
+      mutate_if(is.character, str_replace_all, pattern = 'search_requests_encore__users', replacement = 'search_requests_encore_users') %>%
+      select(-matches("s_date|f_month"))
+  })
+  
+  output$downloadData <- downloadHandler(
+    filename = function() { 
+      paste("DailyDigitalData_", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write_csv(out_df(), file)
+    })
 
 }

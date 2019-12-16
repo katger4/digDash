@@ -9,6 +9,7 @@ logo_blue_gradient <- shinyDashboardLogoDIY(
   ,badgeBackColor = "#bcbddc"
   ,badgeBorderRadius = 3)
 
+
 ui <- dashboardPage(title="Digital dashboard",
                     dashboardHeader(title = logo_blue_gradient
                                     ,titleWidth = 250
@@ -21,8 +22,10 @@ ui <- dashboardPage(title="Digital dashboard",
                                                               ,menuItem("NYPL.org", tabName = "web", icon = icon("newspaper"))
                                                               ,menuItem("Catalog Users", tabName = "users", icon = icon("users"))
                                                               ,menuItem("Catalog Page Views", tabName = "views", icon = icon("eye"))
+                                                              ,br()
+                                                              ,menuItem("Date range selector", tabName = NULL, div(id = "slxn", yearToggleInput("yt")))
                                                               ,br(), br(), br()
-                                                              ,downloadButton('downloadData', 'Download csv', class= "dl_btn", style="margin-left: 30px")
+                                                              ,downloadButton('downloadData', 'Download csv', class= "dl_btn", style="margin-left: 30px") 
                     )),
                     dashboardBody(
                       useShinyjs(),
@@ -32,6 +35,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                  ".shiny-output-error { visibility: hidden; }",
                                  ".shiny-output-error:before { visibility: hidden; }",
                                  ".nvd3 .nv-axis.nv-y text { font-size: 14px; }",
+                                 "#yt-fy_cy .control-label, #conditP .control-label { color:white;}",
                                  ".dl_btn { background-color: #35978f !important; color: #000000 !important; }",
                                  "#link_to_cards:hover, #link_to_Vweb:hover, #link_to_Uweb:hover, #link_to_views:hover, #link_to_users:hover { opacity:0.5; }",
                                  ".small-box.bg-black { background-color: #35978f !important; color: #000000 !important; }",
@@ -42,6 +46,13 @@ ui <- dashboardPage(title="Digital dashboard",
                                  "-webkit-font-smoothing: antialiased;",
                                  "-webkit-filter: blur(0.000001px);"
                       ),
+                      tags$head(tags$script('
+                                            $(document).ready(function () {
+                                            $(".sidebar-menu").children("li").on("click", function() {
+                                            $("#slxn).toggle();
+                                            });
+                                            });
+                                            ')),
                       shinyDashboardThemes(theme = "poor_mans_flatly"),
                       tabItems(
                         tabItem(tabName = "overview",
