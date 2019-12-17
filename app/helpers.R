@@ -1,22 +1,12 @@
-library(googlesheets)
-
 library(shiny)
 library(shinydashboard)
-library(dashboardthemes)
-library(Cairo)
-options(shiny.usecairo=T)
-library(shinycssloaders)
 library(shinyjs)
 
 library(tidyverse)
 library(scales)
 library(magrittr)
 library(lubridate)
-library(packcircles)
-library(plotly)
 library(rCharts)
-
-source("year_toggle.R")
 
 # to setup googlesheet auth (comment out once done)
 # options(httr_oob_default=TRUE) 
@@ -25,15 +15,15 @@ source("year_toggle.R")
 # file.info("shiny_app_token.rds")
 
 googlesheets::gs_auth(token = "shiny_app_token.rds")
-df_ss <- gs_title("data_drop")
+df_ss <- googlesheets::gs_title("data_drop")
 
 circ_choices <- c("Sierra"="sierra_trans",
-                 "Overdrive" = "overdrive_trans",
-                 "CloudLibrary" = "cloud_trans")
+                  "Overdrive" = "overdrive_trans",
+                  "CloudLibrary" = "cloud_trans")
 
 sierra_choices <- c("Checkins" = "sierra_checkins",
-                 "Checkouts" = "sierra_checkouts",
-                 "Renewals" = "sierra_renewals")
+                    "Checkouts" = "sierra_checkouts",
+                    "Renewals" = "sierra_renewals")
 
 odrive_choices <- c("Audiobook checkouts" = "overdrive_audiobook_checkouts",
                     "Ebook checkouts" = "overdrive_ebook_checkouts")
@@ -96,10 +86,6 @@ var_to_label <- function(var_name) {
     gsub('Cloudlibrary', 'CloudLibrary', .)
 }
 
-overview_tooltip <- function(var_name, value, var_type) {
-  paste('<b>',var_name,'</b>:<br>',comma_format()(value),var_type)
-}
-
 tool_label <- function(col_name) {
   return(case_when(grepl("sierra",col_name) ~ "Sierra",
                    grepl("overdrive",col_name) ~ "Overdrive",
@@ -110,7 +96,7 @@ tool_label <- function(col_name) {
                    grepl("encore",col_name) ~ "Encore",
                    grepl("classic",col_name) ~ "Classic catalog",
                    grepl("shared",col_name) ~ "Shared catalog")
-         )
+  )
 }
 
 create_d3_date <- function(ymd_date) {
@@ -129,46 +115,28 @@ create_fy_qtr <- function(ymd_date, fy_year) {
   paste0(fy_year, " Q", quarter(ymd_date, with_year = FALSE, fiscal_start = 7))
 }
 
-prep_data <- function(df, key, users, views, trans_name, trans_sum, card, web, choices) {
-  if (!missing(users)) {
-    selected <- df %>% select(ends_with("users"), -contains("website"), date_dash)
+select_data <- function(df, choices, dates) {
+  if (dates == TRUE) {
+    selected <- df %>% select(choices, date_dash:s_weekday)
+  } else {
+    selected <- df %>% select(choices) 
   } 
-  if (!missing(views)) {
-    selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
-  } 
-  if (!missing(trans_name)) {
-    selected <- df %>%
-      select(-overdrive_ebook_holds,-overdrive_audiobook_holds) %>% 
-      select(starts_with(trans_name), -ends_with("users"), date_dash) 
-  }
-  if (!missing(trans_sum)) {
-    selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash) %>%
-      select(-overdrive_ebook_holds,-overdrive_audiobook_holds)
-  }
-  
-  if (!missing(web)) {
-    selected <- df %>% select(contains("website"), date_dash)
-  }
-  
-  if (!missing(card)) {
-    gathered <- df %>% 
-      select(new_card_sign_ups, date_dash) %>%
-      rename(count = new_card_sign_ups)
-  } 
-  else {
-    gathered <- selected %>% gather_(key = key, value = "count", setdiff(names(.), 'date_dash'))
-  }
+  return(selected)
+}
 
-  gathered %>%
-    mutate(s_month = month(date_dash, label = TRUE),
-           s_date = create_d3_date(date_dash),
-           s_year = year(date_dash),
-           f_month = create_fy_month(date_dash),
-           f_year = create_fy_year(date_dash),
-           f_quarter = create_fy_qtr(date_dash, f_year),
-           s_weekday = factor(weekdays(date_dash), levels = c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), ordered = TRUE)
-    ) %>%
-    arrange(s_date)
+prep_data <- function(df, choices, dates, key, card) {
+  selected <- select_data(df, choices, dates)
+  if (!missing(card)) {
+    selected %>% rename(count = new_card_sign_ups) %>% arrange(s_date)
+  } else if (dates == FALSE){
+    selected %>% gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash:s_weekday))))
+  }
+  else {
+    selected %>% 
+      # select(choices, date_dash:s_weekday)
+      gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash:s_weekday)))) %>%
+      arrange(s_date)
+  }
 }
 
 prep_bars <- function(df, users, views, circ, card, web, group_var, time_var) {
@@ -189,22 +157,6 @@ prep_bars <- function(df, users, views, circ, card, web, group_var, time_var) {
                log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
         arrange(!!as.name(time_var), count)
     } 
-    # if (!missing(views)) {
-    #   selected <- df %>% select(intersect(contains("views"), matches("catalog|encore")), date_dash) 
-    # } 
-    # if (!missing(trans_name)) {
-    #   selected <- df %>%
-    #     select(-overdrive_ebook_holds,-overdrive_audiobook_holds) %>% 
-    #     select(starts_with(trans_name), -ends_with("users"), date_dash) 
-    # }
-    # if (!missing(trans_sum)) {
-    #   selected <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"), date_dash) %>%
-    #     select(-overdrive_ebook_holds,-overdrive_audiobook_holds)
-    # }
-    # 
-    # if (!missing(web)) {
-    #   selected <- df %>% select(contains("website"), date_dash)
-    # }
   } 
 }
 
@@ -218,3 +170,14 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
+
+# create logo
+logo_beta <- dashboardthemes::shinyDashboardLogoDIY(
+  boldText = "Digital"
+  ,mainText = "dashboard"
+  ,textSize = 16
+  ,badgeText = "BETA"
+  ,badgeTextColor = "white"
+  ,badgeTextSize = 2
+  ,badgeBackColor = "#bcbddc"
+  ,badgeBorderRadius = 3)

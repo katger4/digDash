@@ -1,6 +1,4 @@
 library(shiny)
-library(tidyverse)
-library(lubridate)
 
 cal_opts <- c("2019")
 fis_opts <- c("FY 2020" = "FY2020","FY 2019 (Jan-June only)" = "FY2019")
