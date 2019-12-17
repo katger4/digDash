@@ -38,12 +38,6 @@ ui <- dashboardPage(title="Digital dashboard",
                                  "-webkit-font-smoothing: antialiased;",
                                  "-webkit-filter: blur(0.000001px);"
                       ),
-                      tags$head(tags$script('$(document).ready(function () {
-                                              $(".sidebar-menu").children("li").on("click", function() {
-                                                $("#slxn).toggle();
-                                              });
-                                            });
-                                          ')),
                       dashboardthemes::shinyDashboardThemes(theme = "poor_mans_flatly"),
                       tabItems(
                         tabItem(tabName = "overview",
@@ -61,7 +55,6 @@ ui <- dashboardPage(title="Digital dashboard",
                                 )
                                 ,column(width = 4
                                         ,box(
-                                          # uiOutput("circ_tot")
                                           valueBoxOutput("circ_home_vb", width = NULL)
                                           ,width = NULL
                                           ,plotly::plotlyOutput(outputId = "trans_plot_sum", height = "170px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
@@ -184,9 +177,6 @@ server <- function(input, output, session) {
            s_weekday = factor(weekdays(date_dash), levels = c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), ordered = TRUE)
     )
   
-  # crc <- df %>% select(matches("sierra|overdrive|cloudlibrary"), -ends_with("users"))
-  # sum(crc)
-  
 #### FILTER & SORT DATA ####
   which_year <- yearToggle("yt")
   df_YT <- reactive({
@@ -233,30 +223,6 @@ server <- function(input, output, session) {
   })
   
 #### Vars ####
-  
-  
-
-
-
-  # cc <- prep_data(df, choices = unname(views_choices), dates = FALSE, key = "user_type")
-  # cs <- select_data(df, choices = views_choices)
-  # cc <- cs %>% gather(key = "user_type", value = "count")
-  
-  
-
-  # user_sel <- reactive({select_data(df_YT(), choices = input$user_opts)})
-
-  # views_sel <- reactive({select_data(df_YT(), choices = input$view_opts)})
-
-  # selected_var <- reactive({
-  #   switch(input$sidebar_menu,
-  #          "cards" = card_sel(),
-  #          "transactions" = circ_sel(),
-  #          "web" = web_sel(),
-  #          "users" = user_sel(),
-  #          "views" = views_sel())
-  # })
-  
   circ_var <- reactive({
       switch(input$circ_vars, 
              "sierra_trans" = if (!is.null(input$sierra_opts)) {prep_data(df_YT(), choices = input$sierra_opts, dates = TRUE, key = "transaction_type")}, 
@@ -269,6 +235,7 @@ server <- function(input, output, session) {
       prep_data(df_YT(), choices = input$user_opts, dates = TRUE, key = "user_type") 
     }
   })
+  
   views_var <- reactive({
     if (!is.null(input$view_opts)) {
       prep_data(df_YT(), choices = input$view_opts, dates = TRUE, key = "user_type") 
@@ -282,31 +249,6 @@ server <- function(input, output, session) {
   })
   
   card_var <- reactive({prep_data(df_YT(), choices = "new_card_sign_ups", dates=TRUE, card = TRUE)})
-  
-  # choices <- c("website_visits_users")
-  # s <- select_data(df, web = TRUE) %>% select(date_dash:s_weekday, choices)
-  # g <- gather_data(s, key = "user_type")
-  # wp <- prep_data(df, key = "user_type", web = TRUE, choices = c("website_visits_users"))
-  # c1 <- df %>% 
-  #   select(new_card_sign_ups, date_dash:s_weekday) %>%
-  #   rename(count = new_card_sign_ups)
-  # c <- prep_data(df, choices = "new_card_sign_ups", dates=TRUE, card = TRUE)
-  # w <- prep_data(df, choices = c("website_visits_users"), dates=TRUE, key = "user_type")
-  # # cards <- prep_bars(df, card = TRUE, time_var = "s_month")
-  plot_var <- reactive({
-    switch(input$sidebar_menu,
-           "cards" = card_var(),
-           "transactions" = circ_var(),
-           "web" = web_var(),
-           "users" = user_var(),
-           "views" = views_var())
-  })
-  # m <- reactive({
-  #   prep_bars(plot_var(), users = TRUE, group_var = "user_type", time_var = "s_month")
-  #   # m <- prep_bars(plot_var(), card = TRUE, time_var = "s_month")
-  #   print(head(m))
-  #   return(m)
-  #   })
   
 #### VALUE BOXES ####
   output$circ_home_vb <- renderValueBox({
@@ -584,14 +526,7 @@ server <- function(input, output, session) {
 
   output$views_plot <- renderChart({
     if (input$Vtime_var == "Monthly"){
-      monthly <- views_var() %>%
-        group_by(user_type, s_month) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
-        arrange(s_month, count)
+      monthly <- prep_bars(views_var(), catalog = TRUE, group_var = "user_type", time_var = "s_month", count_var = "log_count")
 
       if (!length(input$view_opts) == 1) {
         n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
@@ -638,15 +573,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Vtime_var == "Quarterly") {
-      quarterly <- views_var() %>%
-        group_by(user_type, f_quarter) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
-        filter(!is.na(log_count)) %>%
-        arrange(f_quarter, count)
+      quarterly <- prep_bars(views_var(), catalog = TRUE, group_var = "user_type", time_var = "f_quarter", count_var = "log_count")
 
       if (!length(input$view_opts) == 1) {
         n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
@@ -665,15 +592,16 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Vtime_var == "Weekday") {
-      wk_daily <- views_var() %>%
-        group_by(user_type, s_weekday) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
-        filter(!is.na(log_count)) %>%
-        arrange(s_weekday, count)
+      wk_daily <- prep_bars(views_var(), catalog = TRUE, group_var = "user_type", time_var = "s_weekday", count_var = "log_count")
+        # views_var() %>%
+        # group_by(user_type, s_weekday) %>%
+        # summarise(count = sum(count)) %>%
+        # ungroup() %>%
+        # mutate(user_lab = tool_label(var_to_label(user_type)),
+        #        hex = cat_color(user_type),
+        #        log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
+        # filter(!is.na(log_count)) %>%
+        # arrange(s_weekday, count)
       
       if (!length(input$view_opts) == 1) {
         n_base <- nPlot(log_count ~ s_weekday, data = wk_daily, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Vplot_for_size_width"]])
@@ -696,14 +624,7 @@ server <- function(input, output, session) {
   
   output$users_plot <- renderChart({
     if (input$Utime_var == "Monthly"){
-      monthly <- user_var() %>%
-        group_by(user_type, s_month) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
-        arrange(s_month, count)
+      monthly <- prep_bars(user_var(), catalog = TRUE, group_var = "user_type", time_var = "s_month", count_var = "log_count")
 
       if (!length(input$user_opts) == 1) {
         n_base <- nPlot(log_count ~ s_month, group = "user_lab", data = monthly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
@@ -749,15 +670,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Utime_var == "Quarterly") {
-      quarterly <- user_var() %>%
-        group_by(user_type, f_quarter) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
-        filter(!is.na(log_count)) %>%
-        arrange(f_quarter, count)
+      quarterly <- prep_bars(user_var(), catalog = TRUE, group_var = "user_type", time_var = "f_quarter", count_var = "log_count")
 
       if (!length(input$user_opts) == 1) {
         n_base <- nPlot(log_count ~ f_quarter, group = "user_lab", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
@@ -776,15 +689,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Utime_var == "Weekday") {
-      wk_daily <- user_var() %>%
-        group_by(user_type, s_weekday) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = tool_label(var_to_label(user_type)),
-               hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
-        filter(!is.na(log_count)) %>%
-        arrange(s_weekday, count)
+      wk_daily <- prep_bars(user_var(), catalog = TRUE, group_var = "user_type", time_var = "s_weekday", count_var = "log_count")
       
       if (!length(input$user_opts) == 1) {
         n_base <- nPlot(log_count ~ s_weekday, data = wk_daily, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Uplot_for_size_width"]])
@@ -807,10 +712,7 @@ server <- function(input, output, session) {
 
   output$card_plot <- renderChart({
     if (input$Ctime_var == "Monthly"){
-      monthly <- plot_var() %>%
-        # prep_data(df_YT(), card=TRUE) %>%
-        group_by(s_month) %>%
-        summarise(count = sum(count))
+      monthly <- prep_bars(card_var(), card = TRUE, time_var = "s_month")
       n_base <- nPlot(count ~ s_month, data = monthly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><b>New card sign ups</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + ' 2019 </p>'} !#"
       n <- format_nPlot(n_base, list(left = 70), "#!d3.format(',.0')!#",plotID = "card_plot", tooltip = tt)
@@ -818,7 +720,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ctime_var == "Daily") {
-      daily <- plot_var() #prep_data(df_YT(), card=TRUE)
+      daily <- card_var() #prep_data(df_YT(), card=TRUE)
 
       n_base <- nPlot(count ~ s_date, data = daily, type = "lineChart", width = session$clientData[["output_Cplot_for_size_width"]])
       xFormat <- "#!function(d) {return d3.time.format.utc('%Y-%m-%d')(new Date(d));} !#"
@@ -828,9 +730,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ctime_var == "Quarterly") {
-      quarterly <- plot_var() %>% #prep_data(df_YT(), card=TRUE) %>%
-        group_by(f_quarter) %>%
-        summarise(count = sum(count))
+      quarterly <- prep_bars(card_var(), card = TRUE, time_var = "f_quarter")
 
       n_base <- nPlot(count ~ f_quarter, data = quarterly, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><b>New card sign ups</b></p><p>' + d3.format(',.0')(e.value) + ' in ' + x + '</p>'} !#"
@@ -839,9 +739,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ctime_var == "Weekday") {
-      wk_daily <- plot_var() %>% #prep_data(df_YT(), card=TRUE) %>%
-        group_by(s_weekday) %>%
-        summarise(count = sum(count))
+      wk_daily <- prep_bars(card_var(), card = TRUE, time_var = "s_weekday")
       
       n_base <- nPlot(count ~ s_weekday, data = wk_daily, type = "multiBarChart", width = session$clientData[["output_Cplot_for_size_width"]])
       tt <- "#! function(key, x, y, e){ return '<p><b>New card sign ups</b></p><p>' + d3.format(',.0')(e.value) + ' on ' + x + 's</p>'} !#"
@@ -854,13 +752,7 @@ server <- function(input, output, session) {
   
   output$web_plot <- renderChart({
     if (input$Wtime_var == "Monthly"){
-      monthly <- web_var() %>%
-        group_by(user_type, s_month) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
-               hex = trans_shade(user_type)) %>%
-        arrange(s_month, count)
+      monthly <- prep_bars(web_var(), web = TRUE, group_var = "user_type", time_var = "s_month", count_var = "count")
 
       if (!length(input$web_opts) == 1) {
         n_base <- nPlot(count ~ s_month, data = monthly, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
@@ -894,13 +786,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Wtime_var == "Quarterly") {
-      quarterly <- web_var() %>%
-        group_by(user_type, f_quarter) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
-               hex = trans_shade(user_type)) %>%
-        arrange(f_quarter, count)
+      quarterly <- prep_bars(web_var(), web = TRUE, group_var = "user_type", time_var = "f_quarter", count_var = "count")
 
       if (!length(input$web_opts) == 1) {
         n_base <- nPlot(count ~ f_quarter, data = quarterly, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
@@ -916,14 +802,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Wtime_var == "Weekday") {
-      wk_daily <- web_var() %>%
-        group_by(user_type, s_weekday) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(user_lab = ifelse(grepl("views",user_type), "Page views", "Users"),
-               hex = trans_shade(user_type)) %>%
-        arrange(s_weekday, count)
-
+      wk_daily <- prep_bars(web_var(), web = TRUE, group_var = "user_type", time_var = "s_weekday", count_var = "count")
 
       if (!length(input$web_opts) == 1) {
         n_base <- nPlot(count ~ s_weekday, data = wk_daily, group = "user_lab", type = "multiBarChart", width = session$clientData[["output_Wplot_for_size_width"]])
@@ -943,12 +822,7 @@ server <- function(input, output, session) {
 
   output$trans_plot <- renderChart({
     if (input$Ttime_var == "Monthly"){
-      monthly <- circ_var() %>%
-        group_by(transaction_type, s_month) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(transaction_type = var_to_label(transaction_type),
-               hex = trans_shade(transaction_type))
+      monthly <- prep_bars(circ_var(), circ = TRUE, group_var = "transaction_type", time_var = "s_month", count_var = "count")
 
       if (!length(unique(circ_var()$transaction_type)) == 1) {
         n_base <- nPlot(count ~ s_month, group = "transaction_type", data = monthly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
@@ -984,12 +858,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ttime_var == "Quarterly") {
-      quarterly <- circ_var() %>%
-        group_by(transaction_type, f_quarter) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(transaction_type = var_to_label(transaction_type),
-               hex = trans_shade(transaction_type))
+      quarterly <- prep_bars(circ_var(), circ = TRUE, group_var = "transaction_type", time_var = "f_quarter", count_var = "count")
 
       if (!length(unique(circ_var()$transaction_type)) == 1) {
         n_base <- nPlot(count ~ f_quarter, group = "transaction_type", data = quarterly, type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])
@@ -1005,13 +874,7 @@ server <- function(input, output, session) {
       return(n)
     }
     else if (input$Ttime_var == "Weekday") {
-      wk_daily <- circ_var() %>%
-        group_by(transaction_type, s_weekday) %>%
-        summarise(count = sum(count)) %>%
-        ungroup() %>%
-        mutate(transaction_type = var_to_label(transaction_type),
-               hex = trans_shade(transaction_type)) %>%
-        arrange(s_weekday, count)
+      wk_daily <- prep_bars(circ_var(), circ = TRUE, group_var = "transaction_type", time_var = "s_weekday", count_var = "count")
 
       if (!length(unique(circ_var()$transaction_type)) == 1) {
         n_base <- nPlot(count ~ s_weekday, data = wk_daily, group = "transaction_type", type = "multiBarChart", width = session$clientData[["output_Tplot_for_size_width"]])

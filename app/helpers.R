@@ -17,6 +17,17 @@ library(rCharts)
 googlesheets::gs_auth(token = "shiny_app_token.rds")
 df_ss <- googlesheets::gs_title("data_drop")
 
+# create logo
+logo_beta <- dashboardthemes::shinyDashboardLogoDIY(
+  boldText = "Digital"
+  ,mainText = "dashboard"
+  ,textSize = 16
+  ,badgeText = "BETA"
+  ,badgeTextColor = "white"
+  ,badgeTextSize = 2
+  ,badgeBackColor = "#bcbddc"
+  ,badgeBorderRadius = 3)
+
 circ_choices <- c("Sierra"="sierra_trans",
                   "Overdrive" = "overdrive_trans",
                   "CloudLibrary" = "cloud_trans")
@@ -133,30 +144,37 @@ prep_data <- function(df, choices, dates, key, card) {
   }
   else {
     selected %>% 
-      # select(choices, date_dash:s_weekday)
       gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash:s_weekday)))) %>%
       arrange(s_date)
   }
 }
 
-prep_bars <- function(df, users, views, circ, card, web, group_var, time_var) {
+prep_bars <- function(df, catalog, circ, card, web, group_var, time_var, count_var) {
   if (!missing(card)) {
-    monthly <- prep_data(df, card=TRUE) %>%
+    grouped <- df %>%
       group_by(!!as.name(time_var)) %>%
       summarise(count = sum(count))
+    return(grouped)
   } 
   else {
     grouped <- df %>% 
       group_by(!!as.name(group_var), !!as.name(time_var)) %>%
       summarise(count = sum(count)) %>%
       ungroup()
-    if (!missing(users) | !missing(views)) {
-      monthly <- grouped %>% 
+    if (!missing(catalog)) {
+      grouped <- grouped %>%
         mutate(user_lab = tool_label(var_to_label(user_type)),
                hex = cat_color(user_type),
-               log_count = ifelse(!count == 0, log(count, 10), 0)) %>%
-        arrange(!!as.name(time_var), count)
+               log_count = ifelse(!count == 0, log(count, 10), NA)) %>%
+        filter(!is.na(log_count))
+    } else if (!missing(web)) {
+      grouped$user_lab <- ifelse(grepl("views",grouped$user_type), "Page views", "Users")
+      grouped$hex <- trans_shade(grouped$user_type)
+    } else if (!missing(circ)) {
+      grouped$transaction_type <- var_to_label(grouped$transaction_type)
+      grouped$hex <- trans_shade(grouped$transaction_type)
     } 
+    return(arrange(grouped, !!as.name(time_var), !!as.name(count_var)))
   } 
 }
 
@@ -170,14 +188,3 @@ format_nPlot <- function(n_base, margin, ytickFormat, xtickFormat, plotID, toolt
   n_base$chart(tooltipContent = tooltip)
   return(n_base) 
 }
-
-# create logo
-logo_beta <- dashboardthemes::shinyDashboardLogoDIY(
-  boldText = "Digital"
-  ,mainText = "dashboard"
-  ,textSize = 16
-  ,badgeText = "BETA"
-  ,badgeTextColor = "white"
-  ,badgeTextSize = 2
-  ,badgeBackColor = "#bcbddc"
-  ,badgeBorderRadius = 3)
