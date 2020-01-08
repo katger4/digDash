@@ -153,14 +153,17 @@ prep_bars <- function(df, catalog, circ, card, web, group_var, time_var, count_v
   if (!missing(card)) {
     grouped <- df %>%
       group_by(!!as.name(time_var)) %>%
-      summarise(count = sum(count))
+      summarise(count = sum(count)) %>% 
+      ungroup() %>%
+      rename(plot_var = !!as.name(time_var))
     return(grouped)
   } 
   else {
     grouped <- df %>% 
       group_by(!!as.name(group_var), !!as.name(time_var)) %>%
       summarise(count = sum(count)) %>%
-      ungroup()
+      ungroup() %>%
+      rename(plot_var = !!as.name(time_var))
     if (!missing(catalog)) {
       grouped <- grouped %>%
         mutate(user_lab = tool_label(var_to_label(user_type)),
@@ -174,7 +177,7 @@ prep_bars <- function(df, catalog, circ, card, web, group_var, time_var, count_v
       grouped$transaction_type <- var_to_label(grouped$transaction_type)
       grouped$hex <- trans_shade(grouped$transaction_type)
     } 
-    return(arrange(grouped, !!as.name(time_var), !!as.name(count_var)))
+    return(arrange(grouped, plot_var, !!as.name(count_var)))
   } 
 }
 

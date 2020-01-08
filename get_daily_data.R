@@ -48,7 +48,7 @@ baseline <- baseline_bk %>% gs_read(ws = 1)
 
 today_data <- dddd %>%
   gs_read(ws = active_sheet_name, range = paste0("B2:AG",today_range), na = c("", "N/A", "NA")) %>%
-  clean_df(.,"2019") %>%
+  clean_df(.,year(as_date(today()))) %>%
   bind_rows(baseline) %>%
   # in case script is run > 1x per day, need this to delete dup daily rows 
   arrange(desc(date_dash)) %>%
