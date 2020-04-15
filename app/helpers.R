@@ -128,7 +128,7 @@ create_fy_qtr <- function(ymd_date, fy_year) {
 
 select_data <- function(df, choices, dates) {
   if (dates == TRUE) {
-    selected <- df %>% select(choices, date_dash:s_weekday)
+    selected <- df %>% select(choices, date_dash,s_month,s_date,s_year,f_month,f_year,f_quarter,s_weekday)
   } else {
     selected <- df %>% select(choices) 
   } 
@@ -140,11 +140,11 @@ prep_data <- function(df, choices, dates, key, card) {
   if (!missing(card)) {
     selected %>% rename(count = new_card_sign_ups) %>% arrange(s_date)
   } else if (dates == FALSE){
-    selected %>% gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash:s_weekday))))
+    selected %>% gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash,s_month,s_date,s_year,f_month,f_year,f_quarter,s_weekday))))
   }
   else {
     selected %>% 
-      gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash:s_weekday)))) %>%
+      gather_(key = key, value = "count", setdiff(names(.), names(df %>% select(date_dash,s_month,s_date,s_year,f_month,f_year,f_quarter,s_weekday)))) %>%
       arrange(s_date)
   }
 }

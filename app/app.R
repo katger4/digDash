@@ -164,7 +164,6 @@ server <- function(input, output, session) {
 #### READ DATA ###
   df <- df_ss %>%
     googlesheets::gs_read_csv(ws = 1) %>%
-    drop_na() %>%
     filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0)) %>%
     # stopped recording these vars
     select(-overdrive_ebook_holds,-overdrive_audiobook_holds,-weekday) %>%
@@ -175,7 +174,8 @@ server <- function(input, output, session) {
            f_year = create_fy_year(date_dash),
            f_quarter = create_fy_qtr(date_dash, f_year),
            s_weekday = factor(weekdays(date_dash), levels = c("Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"), ordered = TRUE)
-    )
+    ) %>%
+    replace(is.na(.), 0)
   
 #### FILTER & SORT DATA ####
   which_year <- yearToggle("yt")
