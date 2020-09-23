@@ -11,21 +11,21 @@ setwd("/Users/katgertz/Desktop/digDash/")
 googlesheets::gs_auth(token = "gdd_token.rds")
 
 clean_df <- function(df, ws_year) {
-  new_names <- df %>%
-    replace(., is.na(.), 0) %>%
+  df %>%
     mutate(date_dash = dmy(paste(X2,"-",ws_year))) %>%
     select(-starts_with("X")) %>%
+    replace(is.na(.), 0) %>%
     rename(weekday = DATE) %>%
     rename_all(tolower) %>%
     rename_all(str_trim) %>%
     rename_all(~gsub('\n| ', '_', .x)) %>%
-    rename_all(~gsub('\\(|\\)', '', .x))
-  return(new_names)
+    rename_all(~gsub('\\(|\\)', '', .x)) %>%
+    rename(new_card_sign_ups = total_new_card_sign_ups)
 }
 
 dddd <- gs_title("Daily Digital DATA DROP ")
 
-active_sheet_name <- gs_ws_ls(dddd)[[1]]
+active_sheet_name <- gs_ws_ls(dddd)[[2]]
 mon <- str_split(active_sheet_name, " ")[[1]][1]
 
 if (match(mon, month.name)) {

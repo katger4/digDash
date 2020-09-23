@@ -1,7 +1,7 @@
 library(shiny)
 
 cal_opts <- c("2020","2019")
-fis_opts <- c("FY 2020" = "FY2020","FY 2019 (Jan-June only)" = "FY2019")
+fis_opts <- c("FY 2021" = "FY2021","FY 2020" = "FY2020","FY 2019 (Jan-June only)" = "FY2019")
 
 # Module UI function
 yearToggleInput <- function(id) {
@@ -26,7 +26,7 @@ yearToggleInput <- function(id) {
     ,conditionalPanel(condition = "input['yt-fy_cy'] == 'fiscal'",id = "conditP",
                       div(style = "padding: 0px 0px 10px; margin-top:-2em"
                           ,selectInput(ns("fis"), label = "",
-                                  choices = fis_opts, selected = "FY 2020",
+                                  choices = fis_opts, selected = "FY 2021",
                                   selectize = FALSE, width = "80%"))
     )
     
