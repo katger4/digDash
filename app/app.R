@@ -55,9 +55,9 @@ ui <- dashboardPage(title="Digital dashboard",
                                 )
                                 ,column(width = 4
                                         ,box(
-                                          valueBoxOutput("circ_home_vb", width = NULL)
+                                          valueBoxOutput("circ_home_vb", width = 12)
                                           ,width = NULL
-                                          ,plotly::plotlyOutput(outputId = "trans_plot_sum", height = "170px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
+                                          ,highchartOutput(outputId = "trans_plot_sum", height = "200px") %>% shinycssloaders::withSpinner(color="#0dc5c1")
                                         )
                                 )
                                 ,column(width = 4
@@ -108,7 +108,7 @@ ui <- dashboardPage(title="Digital dashboard",
                                 ) # users row
                         ), # users tab
                         tabItem(tabName = "cards"
-                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot_tab", width = NULL)),column(width=4))
+                                ,fluidRow(column(width=4),column(width=4,valueBoxOutput("card_tot_tab", width = 12)),column(width=4))
                                 ,fluidRow(
                                   column(width = 9
                                          ,fluidRow(box(width = 12, height = 450, chartOutput(outputId = "card_plot", "nvd3"),plotOutput("Cplot_for_size", height = "1px")))
@@ -161,7 +161,7 @@ ui <- dashboardPage(title="Digital dashboard",
 #### server ####
 server <- function(input, output, session) {
 
-#### READ DATA ###
+#### READ DATA ####
   df <- df_ss %>%
     googlesheets::gs_read_csv(ws = 1) %>%
     filter_at(vars(-starts_with("date"), -starts_with("week")), any_vars(. != 0)) %>%
@@ -505,31 +505,23 @@ server <- function(input, output, session) {
   })
 
 #### PLOTS ####
-  output$trans_plot_sum <- plotly::renderPlotly({
-    trans <- prep_data(df, choices = c(unname(sierra_choices),unname(odrive_choices),unname(cloud_choices)), dates = TRUE, key = "transaction_type") %>%
+  trans_tooltip <- "function() {
+                        header = '<span style=\"font-size: 10px\">' + this.key + ' circulation</span><br/>';
+                        dot = '<span style=\"color:' + this.point.color + '\">\u25CF</span> ';
+                        num = '<b> ' + Highcharts.numberFormat(this.point.y, -1, '.',',') + '</b> ';
+                        return header + dot + num;
+                        }"
+  output$trans_plot_sum <- renderHighchart({
+    trans <- prep_data(df_YT(), choices = c(unname(sierra_choices),unname(odrive_choices),unname(cloud_choices)), dates = TRUE, key = "transaction_type") %>%
       mutate(transaction_group = tool_label(transaction_type),
              hex = cat_color(transaction_group)) %>%
       group_by(transaction_group, hex) %>%
       summarise(tot = sum(count))
-
-    p <- plotly::plot_ly(trans, labels = ~transaction_group, values = ~tot
-                 ,marker = list(colors=trans$hex)
-                 ,textposition="outside"
-                 ,hoverinfo = 'text'
-                 ,hovertext =  paste('<b>',trans$transaction_group,'</b> circulation:<br>',comma_format()(trans$tot))
-                 ,text = trans$transaction_group
-                 ,textinfo = "text"
-                 ,rotation = -100
-    ) %>%
-      plotly::add_pie(hole = 0.6) %>%
-      plotly::layout(showlegend = F,
-             xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-             yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE)
-             ,dragmode =  "zoom"
-             ,margin = list(b=20,l=20,r=20,t=20,pad=4))
-    plotly::ggplotly(p) %>%
-      plotly::config(displayModeBar = F)
-
+    
+    hchart(trans, "pie", hcaes(x = transaction_group, y = tot, color = hex), innerSize = '40%',
+           dataLabels=list(enabled=TRUE, distance = 10)) %>%
+      hc_chart(backgroundColor = 'rgb(240,240,240)') %>%
+      hc_tooltip(formatter = JS(trans_tooltip))
   })
 
   output$views_plot <- renderChart({

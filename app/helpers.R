@@ -7,6 +7,7 @@ library(scales)
 library(magrittr)
 library(lubridate)
 library(rCharts)
+library(highcharter)
 
 # to setup googlesheet auth (comment out once done)
 # options(httr_oob_default=TRUE) 
